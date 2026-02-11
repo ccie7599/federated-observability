@@ -46,8 +46,13 @@ The platform is live on two LKE clusters and serves as a working reference for c
   │  Adds hub.received_at label, batches, fans out to:         │
   │  ├─ Prometheus  (metrics via remote-write)                  │
   │  ├─ Loki        (logs via push API)                         │
-  │  ├─ Tempo       (traces via OTLP/gRPC)                     │
-  │  └─ [Optional: Splunk, Datadog, custom OTLP endpoint]      │
+  │  └─ Tempo       (traces via OTLP/gRPC)                     │
+  │                                                             │
+  │  Optional: OTel Routers for external destinations           │
+  │  Gateway → Kafka/Redpanda → Router(s):                      │
+  │  ├─ Splunk   (logs via HEC)                                 │
+  │  ├─ Datadog  (metrics + traces via DD API)                  │
+  │  └─ Custom   (any OTLP-compatible endpoint)                 │
   └─────────────────────────────────────────────────────────────┘
                │
                ▼
