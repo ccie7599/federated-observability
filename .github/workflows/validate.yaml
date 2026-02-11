@@ -20,9 +20,11 @@ jobs:
 
       - name: Validate collector configs
         run: |
-          for config in $(find . -name '*-config.yaml' -path '*/edge-collector/*' -o -name '*-config.yaml' -path '*/hub-*/*'); do
-            echo "Validating $config"
-            otelcol-contrib validate --config=$config
+          for config in hub/gateway/config.yaml hub/observability/agent/config.yaml hub/observability/scraper/config.yaml edge/agent-config.yaml edge/scraper-config.yaml; do
+            if [ -f "$config" ]; then
+              echo "Validating $config"
+              otelcol-contrib validate --config=$config
+            fi
           done
 
   kustomize-build:
@@ -35,11 +37,13 @@ jobs:
           curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
           sudo mv kustomize /usr/local/bin/
 
-      - name: Build all overlays
+      - name: Build kustomize targets
         run: |
-          for overlay in $(find . -type d -name 'overlays' -exec find {} -mindepth 1 -maxdepth 1 -type d \;); do
-            echo "Building $overlay"
-            kustomize build $overlay > /dev/null
+          for target in hub/monitoring hub/observability hub/gateway examples/inference examples/vault; do
+            if [ -f "$target/kustomization.yaml" ]; then
+              echo "Building $target"
+              kustomize build $target > /dev/null
+            fi
           done
 
   kubeconform:
@@ -58,7 +62,9 @@ jobs:
 
       - name: Validate Kubernetes manifests
         run: |
-          for overlay in $(find . -type d -name 'overlays' -exec find {} -mindepth 1 -maxdepth 1 -type d \;); do
-            echo "Validating $overlay"
-            kustomize build $overlay | kubeconform -strict -summary
+          for target in hub/monitoring hub/observability hub/gateway examples/inference examples/vault; do
+            if [ -f "$target/kustomization.yaml" ]; then
+              echo "Validating $target"
+              kustomize build $target | kubeconform -strict -summary
+            fi
           done

@@ -1,19 +1,23 @@
-.PHONY: help init cluster deploy destroy test port-forward clean
-
-KUBECONFIG := $(PWD)/terraform/kubeconfig
-export KUBECONFIG
+.PHONY: help init cluster deploy-hub deploy-edge test port-forward destroy clean
 
 help:
-	@echo "Federated Observability Platform"
+	@echo "Federated Observability on LKE"
 	@echo ""
-	@echo "Usage:"
-	@echo "  make init        - Initialize Terraform"
-	@echo "  make cluster     - Create LKE cluster"
-	@echo "  make deploy      - Deploy all components"
-	@echo "  make test        - Run smoke tests"
-	@echo "  make port-forward - Start port-forwards to services"
-	@echo "  make destroy     - Destroy cluster"
-	@echo "  make clean       - Clean up local files"
+	@echo "Infrastructure:"
+	@echo "  make init          - Initialize Terraform"
+	@echo "  make cluster       - Create LKE clusters"
+	@echo "  make destroy       - Destroy clusters"
+	@echo ""
+	@echo "Hub Cluster:"
+	@echo "  make deploy-hub    - Deploy hub components (monitoring + observability + gateway)"
+	@echo ""
+	@echo "Edge Cluster:"
+	@echo "  make deploy-edge   - Deploy edge OTel agents"
+	@echo ""
+	@echo "Operations:"
+	@echo "  make test          - Run smoke tests"
+	@echo "  make port-forward  - Start port-forwards to Grafana, Prometheus, Tempo"
+	@echo "  make clean         - Clean up local Terraform files"
 	@echo ""
 
 init:
@@ -22,22 +26,28 @@ init:
 cluster:
 	cd terraform && terraform apply -auto-approve
 
-deploy:
-	./scripts/deploy-all.sh
+deploy-hub:
+	kubectl apply -k hub/monitoring/
+	kubectl apply -k hub/observability/
+	kubectl apply -k hub/gateway/
+
+deploy-edge:
+	@echo "Apply edge agent and scraper configs to the edge cluster context:"
+	@echo "  kubectl --context <edge-ctx> apply -f edge/agent-config.yaml"
+	@echo "  kubectl --context <edge-ctx> apply -f edge/scraper-config.yaml"
 
 test:
 	./tests/smoke_test.sh
 
 port-forward:
 	@echo "Starting port-forwards..."
-	@echo "Grafana: http://localhost:3000 (admin/admin)"
+	@echo "Grafana:    http://localhost:3000 (admin/admin)"
 	@echo "Prometheus: http://localhost:9090"
-	@echo "Test App: http://localhost:8080"
+	@echo "Tempo:      http://localhost:3200"
 	@echo ""
 	@echo "Press Ctrl+C to stop all port-forwards"
 	@kubectl port-forward svc/grafana 3000:3000 -n monitoring & \
 	kubectl port-forward svc/prometheus 9090:9090 -n monitoring & \
-	kubectl port-forward svc/test-app 8080:80 -n test-app & \
 	kubectl port-forward svc/tempo 3200:3200 -n monitoring & \
 	wait
 
@@ -45,4 +55,4 @@ destroy:
 	cd terraform && terraform destroy -auto-approve
 
 clean:
-	rm -rf terraform/.terraform terraform/.terraform.lock.hcl terraform/kubeconfig
+	rm -rf terraform/.terraform terraform/kubeconfig

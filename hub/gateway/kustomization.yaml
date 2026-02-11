@@ -5,10 +5,10 @@ namespace: observability-hub
 
 resources:
   - namespace.yaml
-  - gateway-config.yaml
-  - gateway-deployment.yaml
-  - gateway-hpa.yaml
-  - gateway-pdb.yaml
+  - config.yaml
+  - deployment.yaml
+  - hpa.yaml
+  - pdb.yaml
   - ingress.yaml
   - cert-manager/cluster-issuer.yaml
   - cert-manager/gateway-cert.yaml
