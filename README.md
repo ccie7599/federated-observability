@@ -23,42 +23,47 @@ Built on **OpenTelemetry**, **Grafana Stack** (Prometheus, Loki, Tempo, Grafana)
  │  + filelog receiver             │
  │  + k8s metadata enrichment      │
  │  + cluster.id label injection   │
+ │                                 │
+ │ OTel Scraper (Deployment)       │
+ │  + BERT, cAdvisor scraping      │
  └───────────┬─────────────────────┘
              │
-       ┌─────┴─────┐
-       │           │
-       ▼           │                    OTLP/gRPC
- ┌───────────┐     │              ┌───────────────────┐
- │ Local     │     └─────────────▶│  OTel Gateway     │◀── OTel Agent (hub, 4 pods)
- │ Grafana   │       port 4317    │  (observability-  │◀── OTel Scraper (hub)
- │ Stack     │    (LoadBalancer    │   hub namespace)  │
- │           │     172.238.       │                   │
- │ Prometheus│     181.107)       │  Processors:      │
- │ Loki      │                    │   memory_limiter  │
- │ Tempo     │                    │   resource enrich │
- │ Grafana   │                    │   batch           │
- └───────────┘                    └─────────┬─────────┘
-                                            │
-                       ┌────────────────────┼────────────────────┐
-                       │                    │                    │
-                       ▼                    ▼                    ▼
-              INTERNAL BACKENDS      EXTERNAL DESTINATIONS (TODO)
-              (deployed)             (scaffolded, not yet wired)
-                       │                    │
-          ┌────────────┼──────────┐         ├──▶ Splunk HEC (logs)
-          ▼            ▼          ▼         ├──▶ Datadog (metrics + traces)
-   ┌────────────┐┌──────────┐┌────────┐    └──▶ Customer OTLP endpoint
-   │ Prometheus ││   Loki   ││ Tempo  │
-   │ (remote   ││  (logs)  ││(traces)│    When destination routers are added,
-   │  write)   ││          ││        │    the gateway will fan out to both
-   └─────┬──────┘└────┬─────┘└───┬────┘   internal and external exporters
-         │            │          │         with independent persistent queues.
-         └────────────┼──────────┘
-                      ▼
-               ┌────────────┐
-               │  Grafana   │
-               │  (hub UI)  │
-               └────────────┘
+             │ OTLP/gRPC
+             │ port 4317
+             │ (LoadBalancer
+             │  172.238.181.107)
+             │
+             └──────────────────────▶┌───────────────────┐
+                                     │  OTel Gateway     │◀── OTel Agent (hub, 4 pods)
+                                     │  (observability-  │◀── OTel Scraper (hub)
+                                     │   hub namespace)  │
+                                     │                   │
+                                     │  Processors:      │
+                                     │   memory_limiter  │
+                                     │   resource enrich │
+                                     │   batch           │
+                                     └─────────┬─────────┘
+                                               │
+                          ┌────────────────────┼────────────────────┐
+                          │                    │                    │
+                          ▼                    ▼                    ▼
+                 INTERNAL BACKENDS      EXTERNAL DESTINATIONS (TODO)
+                 (deployed)             (scaffolded, not yet wired)
+                          │                    │
+             ┌────────────┼──────────┐         ├──▶ Splunk HEC (logs)
+             ▼            ▼          ▼         ├──▶ Datadog (metrics + traces)
+      ┌────────────┐┌──────────┐┌────────┐    └──▶ Customer OTLP endpoint
+      │ Prometheus ││   Loki   ││ Tempo  │
+      │ (remote   ││  (logs)  ││(traces)│
+      │  write)   ││          ││        │
+      └─────┬──────┘└────┬─────┘└───┬────┘
+            │            │          │
+            └────────────┼──────────┘
+                         ▼
+                  ┌────────────┐
+                  │  Grafana   │  ◀── single pane of glass
+                  │  (hub UI)  │      for all clusters
+                  └────────────┘
 ```
 
 ### Data Flow
@@ -71,7 +76,7 @@ Source (edge or hub) ──OTLP/gRPC──▶ Gateway ──▶ Prometheus (metr
                                             ──▶ Tempo (traces)
 ```
 
-- **Edge clusters** dual-export: local backends (edge Grafana) + hub gateway (federation)
+- **Edge clusters** export exclusively to the hub gateway (no local backends)
 - **Hub cluster** exports exclusively through the gateway
 - The gateway adds `hub.received_at` to all data; edge agents add `cluster.id` and `cluster.role`
 - Buffering uses OTel persistent queues (`file_storage` extension) -- no external broker needed
@@ -123,9 +128,8 @@ Every metric in Prometheus carries a `hub_received_at` label proving it passed t
 
 | Namespace | Component | Type | Purpose |
 |-----------|-----------|------|---------|
-| observability | otel-agent | DaemonSet (3) | Node telemetry + forward to hub |
-| observability | otel-scraper | Deployment | Scrapes targets via OTel, forwards to local + hub |
-| monitoring | prometheus, loki, tempo, grafana | Various | Local monitoring stack |
+| observability | otel-agent | DaemonSet (3) | Node telemetry, forwarded to hub gateway |
+| observability | otel-scraper | Deployment | Scrapes BERT + cAdvisor, forwarded to hub gateway |
 | bert-inference | bert-inference | Deployment | GPU inference workload |
 | bert-inference | demo-ui | Deployment | Web frontend for BERT |
 
@@ -156,13 +160,9 @@ kubectl --context lke566951-ctx apply -k inference/
 ### Access Services
 
 ```bash
-# Hub Grafana (has all federated data)
+# Hub Grafana (all clusters' data in one place)
 kubectl --context lke564853-ctx port-forward svc/grafana -n monitoring 3000:3000
 # http://localhost:3000 (admin / admin)
-
-# Edge Grafana (local edge data only)
-kubectl --context lke566951-ctx port-forward svc/grafana -n monitoring 3001:3000
-# http://localhost:3001 (admin / admin)
 
 # Hub Prometheus
 kubectl --context lke564853-ctx port-forward svc/prometheus -n monitoring 9090:9090
@@ -209,7 +209,7 @@ federated-observability/
 |----------|--------|-----------|
 | Buffering | OTel persistent queues | Built-in `file_storage` extension with retry; no external broker needed |
 | Hub routing | Gateway fan-out | Single gateway exports to all backends directly (no intermediate broker) |
-| Edge export | Dual-export | Local backends for edge Grafana + hub gateway for federation |
+| Edge export | Hub-only | No local backends on edge; all telemetry sent to hub gateway |
 | Metrics path | Prometheus remote-write only | No direct scraping; OTel is the single source of truth |
 | Cluster ID | Resource attributes | `cluster.id` and `cluster.role` injected by edge OTel agent |
 

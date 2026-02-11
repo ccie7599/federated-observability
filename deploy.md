@@ -233,49 +233,53 @@ kubectl --context lke564853-ctx rollout restart deployment/otel-scraper -n obser
 
 ### 3.1 Edge Agent Rewiring
 
-Configured edge cluster's OTel agent and scraper for **dual-export**:
-1. Local backends (Prometheus/Loki/Tempo) → edge Grafana still works
-2. Hub gateway (`172.238.181.107:4317`) → federated telemetry
+Configured edge cluster's OTel agent and scraper to export exclusively to the hub gateway.
 
 Added resource attributes for cluster identification:
 - `cluster.id: fed-observability-remote`
 - `cluster.role: edge`
 
 ```bash
-# Update edge agent and scraper configs with dual export + cluster ID
 kubectl --context lke566951-ctx apply -f - # (otel-agent-config ConfigMap)
 kubectl --context lke566951-ctx apply -f - # (otel-scraper-config ConfigMap)
 kubectl --context lke566951-ctx rollout restart daemonset/otel-agent -n observability
 kubectl --context lke566951-ctx rollout restart deployment/otel-scraper -n observability
 ```
 
-### 3.2 End-to-End Verification
+### 3.2 Remove Edge Local Monitoring Stack
+
+Removed the local Prometheus/Loki/Tempo/Grafana stack from the edge cluster. All telemetry is centralized on the hub — no need to duplicate storage and compute on every edge cluster.
+
+```bash
+kubectl --context lke566951-ctx delete deployment grafana prometheus -n monitoring
+kubectl --context lke566951-ctx delete statefulset loki tempo -n monitoring
+kubectl --context lke566951-ctx delete svc grafana loki tempo prometheus -n monitoring
+kubectl --context lke566951-ctx delete configmap --all -n monitoring
+```
+
+### 3.3 End-to-End Verification
 
 **Metrics:** Hub Prometheus shows edge metrics with labels:
 - `cluster_id="fed-observability-remote"`
 - `cluster_role="edge"`
 - `hub_received_at="otel-gateway-..."`
 
-Query: `up{cluster_id="fed-observability-remote"}` returns metrics from all 3 edge nodes (2x g6-standard-2, 1x GPU).
+Query: `up{cluster_id="fed-observability-remote"}` returns metrics from all 3 edge nodes (2x g6-standard-2, 1x GPU) plus BERT inference.
 
-**Logs:** Hub Loki receives edge logs via OTLP. Log bodies contain resource attributes including `cluster.id` and `hub.received_at`. Labels limited to `exporter=OTLP` (Loki label extraction can be enhanced later).
+**Logs:** Hub Loki receives edge logs via OTLP. Log bodies contain resource attributes including `cluster.id` and `hub.received_at`.
 
 **Traces:** Edge traces forwarded to hub Tempo via gateway.
 
-### 3.3 Current Data Flow
+### 3.4 Current Data Flow
 
 ```
 Edge Cluster (lke566951-ctx)
-  ├── otel-agent (DaemonSet, 3 pods)
-  │   ├── → local Prometheus/Loki/Tempo (edge Grafana)
-  │   └── → hub gateway 172.238.181.107:4317 (OTLP gRPC)
-  └── otel-scraper (Deployment)
-      ├── → local Prometheus (edge Grafana)
-      └── → hub gateway 172.238.181.107:4317 (OTLP gRPC)
+  ├── otel-agent (DaemonSet, 3 pods) → hub gateway 172.238.181.107:4317
+  └── otel-scraper (Deployment)      → hub gateway 172.238.181.107:4317
 
 Hub Cluster (lke564853-ctx)
   ├── otel-agent (DaemonSet, 4 pods) → gateway (OTLP gRPC)
-  ├── otel-scraper (Deployment) → gateway (OTLP gRPC)
+  ├── otel-scraper (Deployment)      → gateway (OTLP gRPC)
   └── otel-gateway (observability-hub)
       ├── → prometheusremotewrite → Prometheus
       ├── → loki → Loki
@@ -329,11 +333,8 @@ kubectl --context lke564853-ctx exec -n monitoring deploy/prometheus -- \
 kubectl --context lke564853-ctx exec -n monitoring statefulset/loki -- \
   wget -qO- 'http://localhost:3100/loki/api/v1/query?query={exporter="OTLP"}&limit=5'
 
-# Port-forward hub Grafana
+# Port-forward hub Grafana (single pane of glass for all clusters)
 kubectl --context lke564853-ctx port-forward svc/grafana -n monitoring 3000:3000
-
-# Port-forward edge Grafana
-kubectl --context lke566951-ctx port-forward svc/grafana -n monitoring 3001:3000
 
 # Gateway external IP (for edge → hub)
 kubectl --context lke564853-ctx get svc otel-gateway-external -n observability-hub
