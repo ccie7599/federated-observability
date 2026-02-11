@@ -66,9 +66,9 @@ spec:
             - name: OTEL_TRACES_EXPORTER
               value: "otlp"
             - name: OTEL_METRICS_EXPORTER
-              value: "none"
+              value: "otlp"
             - name: OTEL_LOGS_EXPORTER
-              value: "none"
+              value: "otlp"
             - name: OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED
               value: "true"
 
