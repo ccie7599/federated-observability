@@ -288,7 +288,183 @@ Hub Cluster (lke564853-ctx)
 
 ---
 
-## Phase 4: Production Hardening (TODO)
+## Phase 4: Observability Enrichment
+
+**Date:** 2026-02-11
+
+### 4.1 Add Cluster Identity to Hub
+
+Hub OTel agent and scraper were missing `cluster.id` and `cluster.role` resource attributes (only edge had them). Added `resource` processor to both:
+
+```yaml
+processors:
+  resource:
+    attributes:
+      - key: cluster.id
+        value: fed-observability-test
+        action: insert
+      - key: cluster.role
+        value: hub
+        action: insert
+```
+
+```bash
+kubectl --context lke564853-ctx apply -f - # (otel-agent-config ConfigMap)
+kubectl --context lke564853-ctx apply -f - # (otel-scraper-config ConfigMap)
+kubectl --context lke564853-ctx rollout restart daemonset/otel-agent -n observability
+kubectl --context lke564853-ctx rollout restart deployment/otel-scraper -n observability
+```
+
+**Verification:** `count(DCGM_FI_DEV_GPU_UTIL) by (cluster_id, cluster_role)` now returns both `fed-observability-test/hub` and `fed-observability-remote/edge`.
+
+### 4.2 Deploy kube-state-metrics
+
+Deployed kube-state-metrics (v2.13.0) on both clusters for `kube_*` metrics (pods, deployments, daemonsets, HPAs, statefulsets, etc.).
+
+```bash
+# Both clusters - ServiceAccount, ClusterRole, ClusterRoleBinding, Deployment, Service
+kubectl --context lke564853-ctx apply -f observability/kube-state-metrics.yaml
+kubectl --context lke566951-ctx apply -f observability/kube-state-metrics.yaml
+```
+
+Added `kube-state-metrics` scrape job to both scrapers and restarted.
+
+**Result:** 152 `kube_*` metrics now available (pod status, deployment replicas, daemonset scheduling, etc.).
+
+### 4.3 Add kubeletstats Receiver
+
+The original `kubernetes-cadvisor` scrape job (via API proxy path `/api/v1/nodes/<node>/proxy/metrics/cadvisor`) was silently failing on all 7 nodes — targets showed `up=0` with no error details. Root cause: likely timeout or auth issue with the API proxy approach.
+
+**Fix:** Added `kubeletstats` receiver to the OTel agent DaemonSet. Since the agent runs on every node, it connects directly to the local kubelet at `https://<node-ip>:10250/stats/summary`.
+
+```yaml
+receivers:
+  kubeletstats:
+    collection_interval: 30s
+    auth_type: serviceAccount
+    endpoint: "https://${env:K8S_NODE_IP}:10250"
+    insecure_skip_verify: true
+    metric_groups:
+      - node
+      - pod
+      - container
+```
+
+**Note:** Initially used `K8S_NODE_NAME` which failed with DNS resolution errors (`no such host`). Node names are not DNS-resolvable on LKE. Fixed by using `K8S_NODE_IP` (from `status.hostIP` field ref) instead.
+
+```bash
+# Patch DaemonSets to add K8S_NODE_IP env var
+kubectl --context lke564853-ctx patch daemonset otel-agent -n observability --type=json \
+  -p='[{"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"K8S_NODE_IP","valueFrom":{"fieldRef":{"fieldPath":"status.hostIP"}}}}]'
+kubectl --context lke566951-ctx patch daemonset otel-agent -n observability --type=json \
+  -p='[{"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"K8S_NODE_IP","valueFrom":{"fieldRef":{"fieldPath":"status.hostIP"}}}}]'
+```
+
+**Result:** 26 `k8s_*` metrics + 11 `container_*` metrics now flowing from all nodes on both clusters:
+- `k8s_node_cpu_utilization_ratio`, `k8s_node_memory_working_set_bytes`, `k8s_node_filesystem_usage_bytes`, `k8s_node_network_io_bytes_total`
+- `k8s_pod_cpu_utilization_ratio`, `k8s_pod_memory_working_set_bytes`
+- `container_cpu_utilization_ratio`, `container_memory_usage_bytes`
+
+### 4.4 Deploy dcgm-exporter on Edge
+
+Edge cluster had no GPU metrics (dcgm-exporter was only on hub). Deployed to edge in `observability` namespace:
+
+```bash
+kubectl --context lke566951-ctx apply -f - # DaemonSet + Service for dcgm-exporter in observability ns
+```
+
+Added `dcgm-exporter` scrape job to edge scraper config and restarted.
+
+**Result:** DCGM GPU metrics from both clusters visible in Grafana GPU Health dashboard.
+
+### 4.5 Fix Grafana Dashboards
+
+The existing BERT Inference Dashboard had broken datasource UIDs — all panel targets referenced `uid: "prometheus"` but the actual Grafana datasource UID is `PBFA97CFB590B2093`.
+
+**Fixes applied:**
+1. Updated all panel and target datasource UIDs to `PBFA97CFB590B2093`
+2. Added `cluster` template variable (dropdown) to filter by `cluster_id`
+3. Added `cluster_id=~"$cluster"` filter to all PromQL queries
+
+### 4.6 Create Multi-Cluster Dashboards
+
+Created 3 new dashboards under the "Federated Observability" folder:
+
+| Dashboard | UID | Panels | Description |
+|-----------|-----|--------|-------------|
+| **BERT Inference** | `bert-inference-main` | 24 | Fixed datasources, cluster selector. Latency, throughput, error rate, batch size, tokens, GPU gauges, pod resources |
+| **Federation Overview** | `federation-overview` | 18 | Clusters reporting, hub/edge targets up/down, total GPUs, gateway status, targets table, inference metrics by cluster, GPU comparison |
+| **GPU Health** | `gpu-health` | 23 | DCGM deep dive: utilization, memory, temperature (GPU + memory), power, SM/memory clocks, PCIe replay errors, XID errors, energy |
+| **Kubernetes Resources** | `k8s-resources` | 23 | Node CPU/memory/filesystem/network, pod CPU/memory (top 15), container CPU/memory, deployment status table, container restarts |
+
+Dashboard provider folder renamed from "BERT Inference" to "Federated Observability".
+
+```bash
+kubectl --context lke564853-ctx apply -f monitoring/grafana/dashboards-configmap.yaml
+kubectl --context lke564853-ctx apply -f monitoring/grafana/dashboard-providers.yaml
+kubectl --context lke564853-ctx rollout restart deployment/grafana -n monitoring
+```
+
+### 4.7 Deployment Status
+
+| Cluster | Namespace | Resource | Status | Notes |
+|---------|-----------|----------|--------|-------|
+| Hub | observability | otel-agent (DaemonSet, 4 pods) | Running | kubeletstats + cluster identity |
+| Hub | observability | otel-scraper | Running | BERT, DCGM, KSM scraping |
+| Hub | observability | kube-state-metrics | Running | 152 kube_* metrics |
+| Hub | monitoring | dcgm-exporter | Running | GPU metrics (hub) |
+| Hub | monitoring | grafana | Running | 4 dashboards |
+| Edge | observability | otel-agent (DaemonSet, 3 pods) | Running | kubeletstats + cluster identity |
+| Edge | observability | otel-scraper | Running | BERT, DCGM, KSM scraping |
+| Edge | observability | kube-state-metrics | Running | 152 kube_* metrics |
+| Edge | observability | dcgm-exporter | Running | GPU metrics (edge) |
+
+### 4.8 Current Data Flow
+
+```
+Edge Cluster (lke566951-ctx)
+  ├── otel-agent (DaemonSet, 3 pods)
+  │     receivers: otlp, kubeletstats, filelog
+  │     processors: cluster.id=fed-observability-remote, cluster.role=edge
+  │     → hub gateway 172.238.181.107:4317
+  ├── otel-scraper (Deployment)
+  │     scrapes: bert-inference, dcgm-exporter, kube-state-metrics
+  │     processors: cluster.id=fed-observability-remote, cluster.role=edge
+  │     → hub gateway 172.238.181.107:4317
+  ├── kube-state-metrics → scraped by otel-scraper
+  └── dcgm-exporter → scraped by otel-scraper
+
+Hub Cluster (lke564853-ctx)
+  ├── otel-agent (DaemonSet, 4 pods)
+  │     receivers: otlp, kubeletstats, filelog
+  │     processors: cluster.id=fed-observability-test, cluster.role=hub
+  │     → gateway (OTLP gRPC)
+  ├── otel-scraper (Deployment)
+  │     scrapes: bert-inference, dcgm-exporter, kube-state-metrics
+  │     processors: cluster.id=fed-observability-test, cluster.role=hub
+  │     → gateway (OTLP gRPC)
+  ├── kube-state-metrics → scraped by otel-scraper
+  ├── dcgm-exporter → scraped by otel-scraper
+  └── otel-gateway (observability-hub)
+      ├── → prometheusremotewrite → Prometheus
+      ├── → loki → Loki
+      └── → otlp/tempo → Tempo (with persistent queue)
+```
+
+### 4.9 Metrics Summary
+
+| Source | Metric Count | Examples |
+|--------|-------------|---------|
+| kubeletstats | 37 | `k8s_node_cpu_utilization_ratio`, `k8s_pod_memory_working_set_bytes`, `container_cpu_utilization_ratio` |
+| kube-state-metrics | 152 | `kube_pod_status_phase`, `kube_deployment_status_replicas`, `kube_daemonset_status_desired_number_scheduled` |
+| DCGM | 19 | `DCGM_FI_DEV_GPU_UTIL`, `DCGM_FI_DEV_FB_USED`, `DCGM_FI_DEV_POWER_USAGE` |
+| BERT Inference | 10 | `inference_requests_total`, `inference_request_duration_seconds_bucket`, `inference_tokens_processed_total` |
+| Prometheus internal | ~180 | `prometheus_tsdb_*`, `go_memstats_*` |
+| **Total** | **~450** | |
+
+---
+
+## Phase 5: Production Hardening (TODO)
 
 1. **mTLS:** Add cert-manager, generate client certs for edge clusters, enable TLS on gateway
 2. **PII scrubbing:** Deploy edge aggregator between agent and hub (transform processor for email/SSN/CC/phone redaction)
