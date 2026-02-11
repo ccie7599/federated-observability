@@ -1,0 +1,13 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: otel-gateway
+  namespace: observability-hub
+  labels:
+    app.kubernetes.io/name: otel-gateway
+    app.kubernetes.io/part-of: federated-observability
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: otel-gateway

@@ -1,0 +1,62 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resource-limits
+  labels:
+    app.kubernetes.io/part-of: federated-observability
+  annotations:
+    policies.kyverno.io/title: Require Resource Limits
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/description: >-
+      Ensures all containers in observability namespaces have resource
+      requests and limits defined to prevent resource starvation.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-requests-and-limits
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+                - StatefulSet
+                - DaemonSet
+              namespaces:
+                - observability
+                - observability-hub
+      validate:
+        message: "All containers must have CPU and memory requests and limits."
+        pattern:
+          spec:
+            template:
+              spec:
+                containers:
+                  - resources:
+                      requests:
+                        cpu: "?*"
+                        memory: "?*"
+                      limits:
+                        cpu: "?*"
+                        memory: "?*"
+    - name: require-pdb-for-deployments
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              namespaces:
+                - observability
+                - observability-hub
+              selector:
+                matchLabels:
+                  app.kubernetes.io/part-of: federated-observability
+      validate:
+        message: "Deployments with replicas > 1 should have a PodDisruptionBudget."
+        deny:
+          conditions:
+            all:
+              - key: "{{ request.object.spec.replicas }}"
+                operator: GreaterThan
+                value: 1

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bert-inference
+  labels:
+    app: bert-inference
+    environment: production

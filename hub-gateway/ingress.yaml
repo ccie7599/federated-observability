@@ -1,0 +1,33 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: otel-gateway
+  namespace: observability-hub
+  labels:
+    app.kubernetes.io/name: otel-gateway
+    app.kubernetes.io/part-of: federated-observability
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: "on"
+    nginx.ingress.kubernetes.io/auth-tls-secret: "observability-hub/client-ca"
+    nginx.ingress.kubernetes.io/auth-tls-verify-depth: "1"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/limit-rps: "1000"
+    nginx.ingress.kubernetes.io/limit-connections: "100"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - hub.observability.example.com
+      secretName: gateway-tls
+  rules:
+    - host: hub.observability.example.com
+      http:
+        paths:
+          - path: /v1
+            pathType: Prefix
+            backend:
+              service:
+                name: otel-gateway
+                port:
+                  number: 4318

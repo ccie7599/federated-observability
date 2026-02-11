@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redpanda-config
+  namespace: observability-hub
+data:
+  redpanda.yaml: |
+    redpanda:
+      data_directory: /var/lib/redpanda/data
+      rpc_server:
+        address: 0.0.0.0
+        port: 33145
+      kafka_api:
+        - address: 0.0.0.0
+          port: 9092
+          name: internal
+        - address: 0.0.0.0
+          port: 9093
+          name: tls
+          authentication_method: mtls_identity
+      admin:
+        - address: 0.0.0.0
+          port: 9644
+      seed_servers:
+        - host:
+            address: redpanda-0.redpanda.observability-hub.svc.cluster.local
+            port: 33145
+        - host:
+            address: redpanda-1.redpanda.observability-hub.svc.cluster.local
+            port: 33145
+        - host:
+            address: redpanda-2.redpanda.observability-hub.svc.cluster.local
+            port: 33145
+
+      kafka_api_tls:
+        - name: tls
+          enabled: true
+          cert_file: /certs/tls.crt
+          key_file: /certs/tls.key
+          truststore_file: /certs/ca.crt
+          require_client_auth: true
+
+      auto_create_topics_enabled: false
+
+      log_segment_size: 134217728  # 128MB
+      compacted_log_segment_size: 67108864  # 64MB
+      group_topic_partitions: 16
+
+      default_topic_replications: 3
+      default_topic_partitions: 12
+
+    rpk:
+      tune_network: true
+      tune_disk_scheduler: true
+      tune_disk_nomerges: true
+      tune_disk_write_cache: true
+      tune_ballast_file: true
+      overprovisioned: false
+
+    pandaproxy: {}
+    schema_registry: {}
+
+  bootstrap.yaml: |
+    auto_create_topics_enabled: false
+    default_topic_replications: 3
+    log_retention_ms: 604800000  # 7 days default

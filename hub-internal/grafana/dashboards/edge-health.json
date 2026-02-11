@@ -1,0 +1,59 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "panels": [
+    {
+      "title": "Edge Clusters - Last Seen",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "time() - max by (cluster_id) (otelcol_receiver_accepted_spans_total)",
+          "legendFormat": "{{cluster_id}}",
+          "format": "table",
+          "instant": true
+        }
+      ]
+    },
+    {
+      "title": "Spans Received per Edge Cluster",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "sum by (cluster_id) (rate(otelcol_receiver_accepted_spans_total[5m]))",
+          "legendFormat": "{{cluster_id}}"
+        }
+      ]
+    },
+    {
+      "title": "Logs Received per Edge Cluster",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "sum by (cluster_id) (rate(otelcol_receiver_accepted_log_records_total[5m]))",
+          "legendFormat": "{{cluster_id}}"
+        }
+      ]
+    },
+    {
+      "title": "Edge Aggregator Queue Depth",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "expr": "otelcol_exporter_queue_size{exporter=\"otlphttp\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["observability", "edge"],
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "Federated Observability - Edge Health",
+  "uid": "fed-obs-edge-health"
+}

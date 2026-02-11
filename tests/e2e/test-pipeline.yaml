@@ -1,0 +1,67 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: otel-pipeline-test
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: pipeline-test
+    app.kubernetes.io/part-of: federated-observability
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: trace-test
+          image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.96.0
+          args:
+            - traces
+            - --otlp-http
+            - --endpoint=otel-agent.observability.svc.cluster.local:4318
+            - --service-name=e2e-test
+            - --traces=10
+            - --otlp-attributes=test.type="e2e"
+            - --otlp-attributes=test.run="$(date +%s)"
+        - name: metric-test
+          image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.96.0
+          args:
+            - metrics
+            - --otlp-http
+            - --endpoint=otel-agent.observability.svc.cluster.local:4318
+            - --service-name=e2e-test
+            - --metrics=10
+            - --otlp-attributes=test.type="e2e"
+        - name: log-test
+          image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.96.0
+          args:
+            - logs
+            - --otlp-http
+            - --endpoint=otel-agent.observability.svc.cluster.local:4318
+            - --service-name=e2e-test
+            - --logs=10
+            - --otlp-attributes=test.type="e2e"
+        - name: pii-test
+          image: curlimages/curl:8.5.0
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              # Send a log containing PII to verify scrubbing
+              curl -X POST http://otel-agent.observability.svc.cluster.local:4318/v1/logs \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "resourceLogs": [{
+                    "resource": {
+                      "attributes": [{"key": "service.name", "value": {"stringValue": "pii-test"}}]
+                    },
+                    "scopeLogs": [{
+                      "logRecords": [{
+                        "timeUnixNano": "'$(date +%s%N)'",
+                        "body": {"stringValue": "User john@example.com with SSN 123-45-6789 and card 4111-1111-1111-1111 logged in"},
+                        "severityNumber": 9,
+                        "severityText": "INFO"
+                      }]
+                    }]
+                  }]
+                }'
+              echo "PII test log sent - verify scrubbing in destination"

@@ -1,0 +1,27 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo-ui-ingress
+  namespace: bert-inference
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/whitelist-source-range: "47.224.104.170/32"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - obs.connected-cloud.io
+      secretName: obs-connected-cloud-tls
+  rules:
+    - host: obs.connected-cloud.io
+      http:
+        paths:
+          - path: /demo(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: demo-ui
+                port:
+                  number: 80

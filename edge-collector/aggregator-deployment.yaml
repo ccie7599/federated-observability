@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-aggregator
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: otel-aggregator
+    app.kubernetes.io/component: aggregator
+    app.kubernetes.io/part-of: federated-observability
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: otel-aggregator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: otel-aggregator
+        app.kubernetes.io/component: aggregator
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8888"
+    spec:
+      serviceAccountName: otel-aggregator
+      containers:
+        - name: otel-aggregator
+          image: otel/opentelemetry-collector-contrib:0.96.0
+          args:
+            - --config=/etc/otel/config.yaml
+          ports:
+            - name: otlp-grpc
+              containerPort: 4317
+              protocol: TCP
+            - name: health
+              containerPort: 13133
+              protocol: TCP
+            - name: metrics
+              containerPort: 8888
+              protocol: TCP
+          env:
+            - name: CLUSTER_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: cluster-identity
+                  key: cluster-id
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: cluster-identity
+                  key: environment
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otel
+              readOnly: true
+            - name: certs
+              mountPath: /certs
+              readOnly: true
+            - name: queue
+              mountPath: /var/otel/queue
+          livenessProbe:
+            httpGet:
+              path: /
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: otel-aggregator-config
+        - name: certs
+          secret:
+            secretName: otel-aggregator-mtls
+        - name: queue
+          emptyDir:
+            sizeLimit: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-aggregator
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: otel-aggregator
+spec:
+  selector:
+    app.kubernetes.io/name: otel-aggregator
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: otlp-grpc
+      protocol: TCP
+    - name: health
+      port: 13133
+      targetPort: health
+      protocol: TCP
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-aggregator
+  namespace: observability
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-identity
+  namespace: observability
+data:
+  cluster-id: "lke-edge-default"
+  environment: "dev"

@@ -1,0 +1,62 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-mtls-observability
+  labels:
+    app.kubernetes.io/part-of: federated-observability
+  annotations:
+    policies.kyverno.io/title: Require mTLS for Observability
+    policies.kyverno.io/category: Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Ensures all OTel collector deployments in observability namespaces
+      mount TLS certificate volumes, enforcing mTLS communication.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-tls-volume-mounts
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              namespaces:
+                - observability
+                - observability-hub
+              selector:
+                matchLabels:
+                  app.kubernetes.io/part-of: federated-observability
+      validate:
+        message: "OTel collector deployments must mount TLS certificates for mTLS."
+        pattern:
+          spec:
+            template:
+              spec:
+                containers:
+                  - volumeMounts:
+                      - name: "*certs*"
+                        mountPath: "/certs"
+                        readOnly: true
+    - name: require-tls-secret-volume
+      match:
+        any:
+          - resources:
+              kinds:
+                - Deployment
+              namespaces:
+                - observability
+                - observability-hub
+              selector:
+                matchLabels:
+                  app.kubernetes.io/part-of: federated-observability
+      validate:
+        message: "OTel collector deployments must reference a TLS secret volume."
+        pattern:
+          spec:
+            template:
+              spec:
+                volumes:
+                  - name: "*certs*"
+                    secret:
+                      secretName: "?*"

@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: observability-hub
+
+resources:
+  - namespace.yaml
+  - victoria-metrics/config.yaml
+  - victoria-metrics/statefulset.yaml
+  - victoria-metrics/service.yaml
+  - loki/config.yaml
+  - loki/statefulset.yaml
+  - loki/service.yaml
+  - tempo/config.yaml
+  - tempo/statefulset.yaml
+  - tempo/service.yaml
+  - grafana/configmap.yaml
+  - grafana/deployment.yaml
+  - grafana/service.yaml
+
+configMapGenerator:
+  - name: grafana-dashboards
+    files:
+      - grafana/dashboards/overview.json
+      - grafana/dashboards/edge-health.json
+      - grafana/dashboards/destination-health.json
+
+commonLabels:
+  app.kubernetes.io/part-of: federated-observability
+  app.kubernetes.io/managed-by: kustomize

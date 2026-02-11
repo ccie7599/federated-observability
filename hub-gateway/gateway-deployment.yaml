@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-gateway
+  namespace: observability-hub
+  labels:
+    app.kubernetes.io/name: otel-gateway
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/part-of: federated-observability
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: otel-gateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: otel-gateway
+        app.kubernetes.io/component: gateway
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8888"
+    spec:
+      serviceAccountName: otel-gateway
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: otel-gateway
+      containers:
+        - name: otel-gateway
+          image: otel/opentelemetry-collector-contrib:0.96.0
+          args:
+            - --config=/etc/otel/config.yaml
+          ports:
+            - name: otlp-http
+              containerPort: 4318
+              protocol: TCP
+            - name: health
+              containerPort: 13133
+              protocol: TCP
+            - name: zpages
+              containerPort: 55679
+              protocol: TCP
+            - name: metrics
+              containerPort: 8888
+              protocol: TCP
+          env:
+            - name: HUB_REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: hub-identity
+                  key: region
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              cpu: "4"
+              memory: 4Gi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otel
+              readOnly: true
+            - name: kafka-certs
+              mountPath: /certs
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /
+              port: health
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: config
+          configMap:
+            name: otel-gateway-config
+        - name: kafka-certs
+          secret:
+            secretName: kafka-client-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-gateway
+  namespace: observability-hub
+  labels:
+    app.kubernetes.io/name: otel-gateway
+spec:
+  selector:
+    app.kubernetes.io/name: otel-gateway
+  ports:
+    - name: otlp-http
+      port: 4318
+      targetPort: otlp-http
+      protocol: TCP
+    - name: health
+      port: 13133
+      targetPort: health
+      protocol: TCP
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-gateway
+  namespace: observability-hub
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hub-identity
+  namespace: observability-hub
+data:
+  region: "us-east-1"

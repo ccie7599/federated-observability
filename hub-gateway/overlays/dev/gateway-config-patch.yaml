@@ -1,0 +1,99 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-gateway-config
+  namespace: observability-hub
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+            cors:
+              allowed_origins: ["*"]
+              allowed_headers: ["X-Cluster-ID", "X-Environment"]
+
+    processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 1500
+        spike_limit_mib: 400
+
+      resource:
+        attributes:
+          - key: hub.received_at
+            value: ${env:HOSTNAME}
+            action: insert
+
+      batch:
+        send_batch_size: 5000
+        timeout: 5s
+
+    exporters:
+      prometheusremotewrite:
+        endpoint: http://prometheus.monitoring.svc.cluster.local:9090/api/v1/write
+        resource_to_telemetry_conversion:
+          enabled: true
+        retry_on_failure:
+          enabled: true
+          initial_interval: 5s
+          max_interval: 30s
+
+      loki:
+        endpoint: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
+        default_labels_enabled:
+          exporter: true
+          job: true
+        retry_on_failure:
+          enabled: true
+          initial_interval: 5s
+          max_interval: 30s
+
+      otlp/tempo:
+        endpoint: tempo.monitoring.svc.cluster.local:4317
+        tls:
+          insecure: true
+        retry_on_failure:
+          enabled: true
+          initial_interval: 5s
+          max_interval: 30s
+        sending_queue:
+          enabled: true
+          num_consumers: 4
+          queue_size: 5000
+          storage: file_storage
+
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+      zpages:
+        endpoint: 0.0.0.0:55679
+      file_storage:
+        directory: /var/otel/queue
+        timeout: 10s
+        compaction:
+          on_start: true
+          on_rebound: true
+          directory: /var/otel/queue/compaction
+
+    service:
+      extensions: [health_check, zpages, file_storage]
+      telemetry:
+        metrics:
+          address: 0.0.0.0:8888
+      pipelines:
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, resource, batch]
+          exporters: [prometheusremotewrite]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, resource, batch]
+          exporters: [loki]
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, resource, batch]
+          exporters: [otlp/tempo]

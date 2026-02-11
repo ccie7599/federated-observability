@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: 'fed-observability-test'
+
+    # Prometheus is a RECEIVER only - all metrics come via OTel remote write
+    # This is the federated observability pattern: OTel is the single source of truth
+
+    scrape_configs:
+      # Only scrape itself for self-monitoring
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']

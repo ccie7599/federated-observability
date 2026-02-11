@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-router-otlp-config
+  namespace: observability-hub
+data:
+  config.yaml: |
+    receivers:
+      kafka/metrics:
+        brokers:
+          - redpanda-0.redpanda.observability-hub.svc.cluster.local:9093
+          - redpanda-1.redpanda.observability-hub.svc.cluster.local:9093
+          - redpanda-2.redpanda.observability-hub.svc.cluster.local:9093
+        topic: otlp.metrics
+        encoding: otlp_proto
+        group_id: router-otlp-metrics
+        auth:
+          tls:
+            cert_file: /certs/kafka-client.crt
+            key_file: /certs/kafka-client.key
+            ca_file: /certs/kafka-ca.crt
+
+      kafka/logs:
+        brokers:
+          - redpanda-0.redpanda.observability-hub.svc.cluster.local:9093
+          - redpanda-1.redpanda.observability-hub.svc.cluster.local:9093
+          - redpanda-2.redpanda.observability-hub.svc.cluster.local:9093
+        topic: otlp.logs
+        encoding: otlp_proto
+        group_id: router-otlp-logs
+        auth:
+          tls:
+            cert_file: /certs/kafka-client.crt
+            key_file: /certs/kafka-client.key
+            ca_file: /certs/kafka-ca.crt
+
+      kafka/traces:
+        brokers:
+          - redpanda-0.redpanda.observability-hub.svc.cluster.local:9093
+          - redpanda-1.redpanda.observability-hub.svc.cluster.local:9093
+          - redpanda-2.redpanda.observability-hub.svc.cluster.local:9093
+        topic: otlp.traces
+        encoding: otlp_proto
+        group_id: router-otlp-traces
+        auth:
+          tls:
+            cert_file: /certs/kafka-client.crt
+            key_file: /certs/kafka-client.key
+            ca_file: /certs/kafka-ca.crt
+
+    processors:
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 1500
+        spike_limit_mib: 300
+
+      batch:
+        send_batch_size: 5000
+        timeout: 10s
+
+    exporters:
+      otlphttp:
+        endpoint: ${env:CUSTOMER_OTLP_ENDPOINT}
+        compression: zstd
+        tls:
+          insecure: false
+        retry_on_failure:
+          enabled: true
+          initial_interval: 10s
+          max_interval: 60s
+        sending_queue:
+          enabled: true
+          queue_size: 5000
+          storage: file_storage
+
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+      file_storage:
+        directory: /var/otel/queue
+
+    service:
+      extensions: [health_check, file_storage]
+      pipelines:
+        traces:
+          receivers: [kafka/traces]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp]
+        metrics:
+          receivers: [kafka/metrics]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp]
+        logs:
+          receivers: [kafka/logs]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: router-otlp-config-env
+  namespace: observability-hub
+data:
+  endpoint: "https://otlp.customer.example.com:4318"

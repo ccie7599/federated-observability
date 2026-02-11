@@ -1,0 +1,75 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Pipeline Throughput (spans/sec)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(otelcol_receiver_accepted_spans_total[5m])",
+          "legendFormat": "{{receiver}} - {{transport}}"
+        }
+      ]
+    },
+    {
+      "title": "Pipeline Throughput (metrics/sec)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(otelcol_receiver_accepted_metric_points_total[5m])",
+          "legendFormat": "{{receiver}}"
+        }
+      ]
+    },
+    {
+      "title": "Pipeline Throughput (logs/sec)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "rate(otelcol_receiver_accepted_log_records_total[5m])",
+          "legendFormat": "{{receiver}}"
+        }
+      ]
+    },
+    {
+      "title": "Dropped Data",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "rate(otelcol_receiver_refused_spans_total[5m])",
+          "legendFormat": "refused spans - {{receiver}}"
+        },
+        {
+          "expr": "rate(otelcol_exporter_send_failed_spans_total[5m])",
+          "legendFormat": "failed spans - {{exporter}}"
+        }
+      ]
+    },
+    {
+      "title": "Queue Size",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "expr": "otelcol_exporter_queue_size",
+          "legendFormat": "{{exporter}}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["observability", "overview"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "title": "Federated Observability - Overview",
+  "uid": "fed-obs-overview"
+}

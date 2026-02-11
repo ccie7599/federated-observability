@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bert-inference
+  namespace: bert-inference
+  labels:
+    app: bert-inference
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  selector:
+    app: bert-inference
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+    - name: metrics
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+    - name: grpc
+      port: 50051
+      targetPort: 50051
+      protocol: TCP
+
+---
+# LoadBalancer service for external access (optional)
+apiVersion: v1
+kind: Service
+metadata:
+  name: bert-inference-external
+  namespace: bert-inference
+  labels:
+    app: bert-inference
+  annotations:
+    service.beta.kubernetes.io/linode-loadbalancer-throttle: "20"
+spec:
+  type: LoadBalancer
+  selector:
+    app: bert-inference
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP

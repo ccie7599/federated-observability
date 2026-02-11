@@ -1,0 +1,64 @@
+name: Validate Configs
+
+on:
+  pull_request:
+    paths:
+      - '**/*.yaml'
+      - '**/*.yml'
+
+jobs:
+  validate-otel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install otelcol
+        run: |
+          curl -LO https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.96.0/otelcol-contrib_0.96.0_linux_amd64.tar.gz
+          tar -xzf otelcol-contrib_0.96.0_linux_amd64.tar.gz
+          sudo mv otelcol-contrib /usr/local/bin/
+
+      - name: Validate collector configs
+        run: |
+          for config in $(find . -name '*-config.yaml' -path '*/edge-collector/*' -o -name '*-config.yaml' -path '*/hub-*/*'); do
+            echo "Validating $config"
+            otelcol-contrib validate --config=$config
+          done
+
+  kustomize-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Build all overlays
+        run: |
+          for overlay in $(find . -type d -name 'overlays' -exec find {} -mindepth 1 -maxdepth 1 -type d \;); do
+            echo "Building $overlay"
+            kustomize build $overlay > /dev/null
+          done
+
+  kubeconform:
+    runs-on: ubuntu-latest
+    needs: kustomize-build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+          curl -LO https://github.com/yannh/kubeconform/releases/download/v0.6.4/kubeconform-linux-amd64.tar.gz
+          tar -xzf kubeconform-linux-amd64.tar.gz
+          sudo mv kubeconform /usr/local/bin/
+
+      - name: Validate Kubernetes manifests
+        run: |
+          for overlay in $(find . -type d -name 'overlays' -exec find {} -mindepth 1 -maxdepth 1 -type d \;); do
+            echo "Validating $overlay"
+            kustomize build $overlay | kubeconform -strict -summary
+          done

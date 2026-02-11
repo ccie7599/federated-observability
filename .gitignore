@@ -1,0 +1,20 @@
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfvars
+
+# Secrets
+.env
+*.key
+*.pem
+*kubeconfig*
+credentials*
+vault-keys.json
+
+# Logs
+logs/
+
+# OS
+.DS_Store
+*.swp

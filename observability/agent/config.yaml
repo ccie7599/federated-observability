@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-agent-config
+  namespace: observability
+data:
+  config.yaml: |
+    receivers:
+      # OTLP receiver - apps send metrics/traces/logs here
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+      # Note: Prometheus scraping is handled by the otel-scraper deployment
+      # This agent focuses on receiving OTLP from instrumented apps and collecting logs
+
+      # Container logs via filelog
+      filelog:
+        include:
+          - /var/log/pods/*/*/*.log
+        exclude:
+          - /var/log/pods/*/otel-agent/*.log
+        operators:
+          - type: router
+            routes:
+              - expr: 'body matches "^\\{"'
+                output: json_parser
+              - expr: 'true'
+                output: regex_parser
+          - id: json_parser
+            type: json_parser
+            timestamp:
+              parse_from: attributes.time
+              layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+          - id: regex_parser
+            type: regex_parser
+            regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<flags>[^ ]*) (?P<log>.*)$'
+
+    processors:
+      # Add Kubernetes metadata
+      k8sattributes:
+        auth_type: serviceAccount
+        passthrough: false
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.pod.uid
+            - k8s.namespace.name
+            - k8s.node.name
+            - k8s.deployment.name
+          labels:
+            - tag_name: app
+              key: app.kubernetes.io/name
+            - tag_name: component
+              key: app.kubernetes.io/component
+
+      # Resource detection
+      resourcedetection:
+        detectors: [env, system]
+        timeout: 5s
+        override: false
+
+      # Memory limiter
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 400
+        spike_limit_mib: 100
+
+      # Batch for efficiency
+      batch:
+        send_batch_size: 1000
+        send_batch_max_size: 1500
+        timeout: 10s
+
+    exporters:
+      # Send to local Prometheus
+      prometheusremotewrite:
+        endpoint: http://prometheus.monitoring:9090/api/v1/write
+        resource_to_telemetry_conversion:
+          enabled: true
+
+      # Send logs to Loki
+      loki:
+        endpoint: http://loki.monitoring:3100/loki/api/v1/push
+        default_labels_enabled:
+          exporter: true
+          job: true
+
+      # Send traces to Tempo
+      otlp/tempo:
+        endpoint: tempo.monitoring:4317
+        tls:
+          insecure: true
+
+      # Debug output
+      debug:
+        verbosity: basic
+
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+
+    service:
+      extensions: [health_check]
+      telemetry:
+        metrics:
+          address: 0.0.0.0:8888
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, k8sattributes, resourcedetection, batch]
+          exporters: [otlp/tempo]
+        metrics:
+          receivers: [otlp]
+          processors: [memory_limiter, k8sattributes, resourcedetection, batch]
+          exporters: [prometheusremotewrite]
+        logs:
+          receivers: [otlp, filelog]
+          processors: [memory_limiter, k8sattributes, resourcedetection, batch]
+          exporters: [loki]

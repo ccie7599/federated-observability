@@ -1,0 +1,62 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-pii-scrubbing
+  labels:
+    app.kubernetes.io/part-of: federated-observability
+  annotations:
+    policies.kyverno.io/title: Require PII Scrubbing at Edge
+    policies.kyverno.io/category: Compliance
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Validates that edge aggregator OTel collector configs include PII
+      scrubbing transform processors. This is mandatory for bank compliance
+      before telemetry leaves the source cluster.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: validate-pii-transform-in-config
+      match:
+        any:
+          - resources:
+              kinds:
+                - ConfigMap
+              namespaces:
+                - observability
+              names:
+                - otel-aggregator-config
+      validate:
+        message: >-
+          Aggregator config must include PII scrubbing transform processor
+          with email, SSN, and credit card redaction patterns.
+        deny:
+          conditions:
+            all:
+              - key: "{{ request.object.data.\"config.yaml\" }}"
+                operator: AnyNotIn
+                value:
+                  - "*EMAIL_REDACTED*"
+                  - "*SSN_REDACTED*"
+                  - "*CC_REDACTED*"
+    - name: require-attributes-processor
+      match:
+        any:
+          - resources:
+              kinds:
+                - ConfigMap
+              namespaces:
+                - observability
+              names:
+                - otel-aggregator-config
+      validate:
+        message: >-
+          Aggregator config must include attributes processor to delete
+          sensitive headers (authorization, cookie, x-api-key).
+        deny:
+          conditions:
+            all:
+              - key: "{{ request.object.data.\"config.yaml\" }}"
+                operator: AnyNotIn
+                value:
+                  - "*http.request.header.authorization*"

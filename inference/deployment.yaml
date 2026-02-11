@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bert-inference
+  namespace: bert-inference
+  labels:
+    app: bert-inference
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bert-inference
+  template:
+    metadata:
+      labels:
+        app: bert-inference
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      # Schedule on GPU nodes (label GPU nodes with: kubectl label node <node-name> nvidia.com/gpu.present=true)
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+
+      # Ensure pods don't get scheduled on nodes without GPUs
+      tolerations:
+        - key: "nvidia.com/gpu"
+          operator: "Exists"
+          effect: "NoSchedule"
+
+      containers:
+        - name: bert-inference
+          # Custom GPU image with BERT model baked in
+          image: brianapley/bert-inference:gpu-v2
+          imagePullPolicy: Always
+          # Install OTel and wrap with auto-instrumentation at startup
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              pip3 install --no-cache-dir \
+                opentelemetry-distro \
+                opentelemetry-exporter-otlp-proto-grpc \
+                opentelemetry-instrumentation-fastapi
+              opentelemetry-instrument python3 inference_server.py
+
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+          env:
+            - name: MODEL_PATH
+              value: "/models/bert-base-uncased/model.onnx"
+            - name: ONNX_EXECUTION_PROVIDER
+              value: "CUDAExecutionProvider"
+            - name: MAX_SEQUENCE_LENGTH
+              value: "512"
+            # OpenTelemetry auto-instrumentation configuration
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://otel-agent.observability:4317"
+            - name: OTEL_SERVICE_NAME
+              value: "bert-inference"
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace=bert-inference,deployment.environment=production"
+            - name: OTEL_TRACES_EXPORTER
+              value: "otlp"
+            - name: OTEL_METRICS_EXPORTER
+              value: "none"
+            - name: OTEL_LOGS_EXPORTER
+              value: "none"
+            - name: OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED
+              value: "true"
+
+          resources:
+            requests:
+              memory: "8Gi"
+              cpu: "2"
+              nvidia.com/gpu: "1"
+            limits:
+              memory: "12Gi"
+              cpu: "4"
+              nvidia.com/gpu: "1"
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 120
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 90
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 5
+
+      # Graceful shutdown
+      terminationGracePeriodSeconds: 30
+

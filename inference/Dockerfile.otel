@@ -1,0 +1,14 @@
+# Wrapper image to add OpenTelemetry auto-instrumentation
+FROM brianapley/bert-inference:gpu-v2
+
+# Install OpenTelemetry packages
+RUN pip3 install --no-cache-dir \
+    opentelemetry-api>=1.22.0 \
+    opentelemetry-sdk>=1.22.0 \
+    opentelemetry-exporter-otlp-proto-grpc>=1.22.0 \
+    opentelemetry-instrumentation-fastapi>=0.43b0 \
+    opentelemetry-distro>=0.43b0 \
+    opentelemetry-instrumentation>=0.43b0
+
+# Run with auto-instrumentation
+ENTRYPOINT ["opentelemetry-instrument", "python3", "inference_server.py"]
