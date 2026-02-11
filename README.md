@@ -7,9 +7,9 @@ Built on **OpenTelemetry**, **Grafana Stack** (Prometheus, Loki, Tempo, Grafana)
 ## Architecture
 
 ```
- EDGE CLUSTER (fed-observability-remote)          HUB CLUSTER (fed-observability-test)
- us-ord | 2x g6-standard-2 + 1x GPU              us-ord | 3x g6-standard-4 + 1x GPU
- ──────────────────────────────────────            ──────────────────────────────────────
+ EDGE CLUSTER (fed-observability-remote)           HUB CLUSTER (fed-observability-test)
+ us-ord | 2x g6-standard-2 + 1x GPU               us-ord | 3x g6-standard-4 + 1x GPU
+ ──────────────────────────────────────             ──────────────────────────────────────
 
  ┌─────────────────────────────────┐
  │ Workloads                       │
@@ -27,34 +27,38 @@ Built on **OpenTelemetry**, **Grafana Stack** (Prometheus, Loki, Tempo, Grafana)
              │
        ┌─────┴─────┐
        │           │
-       ▼           │                   OTLP/gRPC
- ┌───────────┐     │              ┌──────────────────┐
- │ Local     │     └─────────────▶│ OTel Gateway     │◀── OTel Agent (hub, 4 pods)
- │ Grafana   │       port 4317    │ (observability-  │◀── OTel Scraper (hub)
- │ Stack     │    (LoadBalancer    │  hub namespace)  │
- │           │     172.238.       │                  │
- │ Prometheus│     181.107)       │ Processors:      │
- │ Loki      │                    │  memory_limiter  │
- │ Tempo     │                    │  resource enrich │
- │ Grafana   │                    │  batch           │
- └───────────┘                    └────────┬─────────┘
-                                           │
-                            ┌──────────────┼──────────────┐
-                            │              │              │
-                            ▼              ▼              ▼
-                     ┌────────────┐ ┌────────────┐ ┌────────────┐
-                     │ Prometheus │ │    Loki    │ │   Tempo    │
-                     │ (remote   │ │  (logs)    │ │  (traces)  │
-                     │  write)   │ │            │ │  persistent│
-                     │           │ │            │ │  queue     │
-                     └─────┬─────┘ └─────┬──────┘└─────┬──────┘
-                           │             │             │
-                           └─────────────┼─────────────┘
-                                         ▼
-                                  ┌────────────┐
-                                  │  Grafana   │
-                                  │  (hub UI)  │
-                                  └────────────┘
+       ▼           │                    OTLP/gRPC
+ ┌───────────┐     │              ┌───────────────────┐
+ │ Local     │     └─────────────▶│  OTel Gateway     │◀── OTel Agent (hub, 4 pods)
+ │ Grafana   │       port 4317    │  (observability-  │◀── OTel Scraper (hub)
+ │ Stack     │    (LoadBalancer    │   hub namespace)  │
+ │           │     172.238.       │                   │
+ │ Prometheus│     181.107)       │  Processors:      │
+ │ Loki      │                    │   memory_limiter  │
+ │ Tempo     │                    │   resource enrich │
+ │ Grafana   │                    │   batch           │
+ └───────────┘                    └─────────┬─────────┘
+                                            │
+                       ┌────────────────────┼────────────────────┐
+                       │                    │                    │
+                       ▼                    ▼                    ▼
+              INTERNAL BACKENDS      EXTERNAL DESTINATIONS (TODO)
+              (deployed)             (scaffolded, not yet wired)
+                       │                    │
+          ┌────────────┼──────────┐         ├──▶ Splunk HEC (logs)
+          ▼            ▼          ▼         ├──▶ Datadog (metrics + traces)
+   ┌────────────┐┌──────────┐┌────────┐    └──▶ Customer OTLP endpoint
+   │ Prometheus ││   Loki   ││ Tempo  │
+   │ (remote   ││  (logs)  ││(traces)│    When destination routers are added,
+   │  write)   ││          ││        │    the gateway will fan out to both
+   └─────┬──────┘└────┬─────┘└───┬────┘   internal and external exporters
+         │            │          │         with independent persistent queues.
+         └────────────┼──────────┘
+                      ▼
+               ┌────────────┐
+               │  Grafana   │
+               │  (hub UI)  │
+               └────────────┘
 ```
 
 ### Data Flow
