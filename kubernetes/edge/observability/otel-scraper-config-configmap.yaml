@@ -13,7 +13,7 @@ data:
     \              target_label: service\n\n        - job_name: 'dcgm-exporter'\n\
     \          scrape_interval: 15s\n          kubernetes_sd_configs:\n          \
     \  - role: endpoints\n              namespaces:\n                names:\n    \
-    \              - monitoring\n          relabel_configs:\n            - source_labels:\
+    \              - observability\n          relabel_configs:\n            - source_labels:\
     \ [__meta_kubernetes_service_name]\n              action: keep\n             \
     \ regex: dcgm-exporter\n            - source_labels: [__meta_kubernetes_endpoint_port_name]\n\
     \              action: keep\n              regex: metrics\n            - source_labels:\
@@ -27,16 +27,27 @@ data:
     \     - source_labels: [__meta_kubernetes_endpoint_port_name]\n              action:\
     \ keep\n              regex: http-metrics\n            - source_labels: [__meta_kubernetes_namespace]\n\
     \              target_label: namespace\n            - source_labels: [__meta_kubernetes_pod_name]\n\
-    \              target_label: pod\n\nprocessors:\n  resource:\n    attributes:\n\
-    \      - key: cluster.id\n        value: fed-observability-test\n        action:\
-    \ insert\n      - key: cluster.role\n        value: hub\n        action: insert\n\
-    \n  memory_limiter:\n    check_interval: 1s\n    limit_mib: 400\n    spike_limit_mib:\
-    \ 100\n\n  batch:\n    send_batch_size: 1000\n    send_batch_max_size: 1500\n\
-    \    timeout: 10s\n\nexporters:\n  otlp/gateway:\n    endpoint: otel-gateway.observability-hub.svc.cluster.local:4317\n\
-    \    tls:\n      insecure: true\n\nextensions:\n  health_check:\n    endpoint:\
-    \ 0.0.0.0:13133\n\nservice:\n  extensions: [health_check]\n  telemetry:\n    metrics:\n\
-    \      address: 0.0.0.0:8888\n  pipelines:\n    metrics:\n      receivers: [prometheus]\n\
-    \      processors: [memory_limiter, resource, batch]\n      exporters: [otlp/gateway]\n"
+    \              target_label: pod\n\n        - job_name: 'kubernetes-cadvisor'\n\
+    \          scrape_interval: 30s\n          scheme: https\n          kubernetes_sd_configs:\n\
+    \            - role: node\n          tls_config:\n            ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt\n\
+    \            insecure_skip_verify: true\n          bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token\n\
+    \          relabel_configs:\n            - action: labelmap\n              regex:\
+    \ __meta_kubernetes_node_label_(.+)\n            - target_label: __address__\n\
+    \              replacement: kubernetes.default.svc:443\n            - source_labels:\
+    \ [__meta_kubernetes_node_name]\n              regex: (.+)\n              target_label:\
+    \ __metrics_path__\n              replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor\n\
+    \            - source_labels: [__meta_kubernetes_node_name]\n              target_label:\
+    \ instance\n\nprocessors:\n  resource:\n    attributes:\n      - key: cluster.id\n\
+    \        value: fed-observability-remote\n        action: insert\n      - key:\
+    \ cluster.role\n        value: edge\n        action: insert\n\n  memory_limiter:\n\
+    \    check_interval: 1s\n    limit_mib: 400\n    spike_limit_mib: 100\n\n  batch:\n\
+    \    send_batch_size: 1000\n    send_batch_max_size: 1500\n    timeout: 10s\n\n\
+    exporters:\n  otlp/hub:\n    endpoint: 172.238.181.107:4317\n    tls:\n      insecure:\
+    \ true\n    retry_on_failure:\n      enabled: true\n      initial_interval: 5s\n\
+    \      max_interval: 60s\n\nextensions:\n  health_check:\n    endpoint: 0.0.0.0:13133\n\
+    \nservice:\n  extensions: [health_check]\n  telemetry:\n    metrics:\n      address:\
+    \ 0.0.0.0:8888\n  pipelines:\n    metrics:\n      receivers: [prometheus]\n  \
+    \    processors: [memory_limiter, resource, batch]\n      exporters: [otlp/hub]\n"
 kind: ConfigMap
 metadata:
   name: otel-scraper-config

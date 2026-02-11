@@ -1,8 +1,1470 @@
 apiVersion: v1
+data:
+  bert-inference-dashboard.json: "{\n  \"annotations\": {\n    \"list\": []\n  },\n\
+    \  \"editable\": true,\n  \"fiscalYearStartMonth\": 0,\n  \"graphTooltip\": 1,\n\
+    \  \"id\": null,\n  \"links\": [],\n  \"liveNow\": false,\n  \"panels\": [\n \
+    \   {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"h\": 1,\n\
+    \        \"w\": 24,\n        \"x\": 0,\n        \"y\": 0\n      },\n      \"id\"\
+    : 100,\n      \"title\": \"Overview\",\n      \"type\": \"row\"\n    },\n    {\n\
+    \      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\":\
+    \ \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"color\": {\n            \"mode\": \"thresholds\"\n          },\n\
+    \          \"mappings\": [],\n          \"thresholds\": {\n            \"mode\"\
+    : \"absolute\",\n            \"steps\": [\n              {\n                \"\
+    color\": \"green\",\n                \"value\": null\n              },\n     \
+    \         {\n                \"color\": \"yellow\",\n                \"value\"\
+    : 100\n              },\n              {\n                \"color\": \"red\",\n\
+    \                \"value\": 500\n              }\n            ]\n          },\n\
+    \          \"unit\": \"ms\"\n        }\n      },\n      \"gridPos\": {\n     \
+    \   \"h\": 4,\n        \"w\": 4,\n        \"x\": 0,\n        \"y\": 1\n      },\n\
+    \      \"id\": 1,\n      \"options\": {\n        \"colorMode\": \"value\",\n \
+    \       \"graphMode\": \"area\",\n        \"justifyMode\": \"auto\",\n       \
+    \ \"orientation\": \"auto\",\n        \"reduceOptions\": {\n          \"calcs\"\
+    : [\n            \"lastNotNull\"\n          ],\n          \"fields\": \"\",\n\
+    \          \"values\": false\n        },\n        \"textMode\": \"auto\"\n   \
+    \   },\n      \"title\": \"Avg Latency\",\n      \"type\": \"stat\",\n      \"\
+    targets\": [\n        {\n          \"expr\": \"histogram_quantile(0.5, sum(rate(inference_request_duration_seconds_bucket{cluster_id=~\\\
+    \"$cluster\\\",namespace=\\\"bert-inference\\\"}[5m])) by (le)) * 1000\",\n  \
+    \        \"refId\": \"A\",\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n          }\n \
+    \       }\n      ]\n    },\n    {\n      \"datasource\": {\n        \"type\":\
+    \ \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n          \
+    \  \"mode\": \"thresholds\"\n          },\n          \"mappings\": [],\n     \
+    \     \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\"\
+    : [\n              {\n                \"color\": \"green\",\n                \"\
+    value\": null\n              },\n              {\n                \"color\": \"\
+    yellow\",\n                \"value\": 200\n              },\n              {\n\
+    \                \"color\": \"red\",\n                \"value\": 1000\n      \
+    \        }\n            ]\n          },\n          \"unit\": \"ms\"\n        }\n\
+    \      },\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 4,\n      \
+    \  \"x\": 4,\n        \"y\": 1\n      },\n      \"id\": 2,\n      \"options\"\
+    : {\n        \"colorMode\": \"value\",\n        \"graphMode\": \"area\",\n   \
+    \     \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\",\n       \
+    \ \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n\
+    \          ],\n          \"fields\": \"\",\n          \"values\": false\n    \
+    \    },\n        \"textMode\": \"auto\"\n      },\n      \"title\": \"P95 Latency\"\
+    ,\n      \"type\": \"stat\",\n      \"targets\": [\n        {\n          \"expr\"\
+    : \"histogram_quantile(0.95, sum(rate(inference_request_duration_seconds_bucket{cluster_id=~\\\
+    \"$cluster\\\",namespace=\\\"bert-inference\\\"}[5m])) by (le)) * 1000\",\n  \
+    \        \"refId\": \"A\",\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n          }\n \
+    \       }\n      ]\n    },\n    {\n      \"datasource\": {\n        \"type\":\
+    \ \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n          \
+    \  \"mode\": \"thresholds\"\n          },\n          \"mappings\": [],\n     \
+    \     \"thresholds\": {\n            \"mode\": \"absolute\",\n            \"steps\"\
+    : [\n              {\n                \"color\": \"green\",\n                \"\
+    value\": null\n              }\n            ]\n          },\n          \"unit\"\
+    : \"reqps\"\n        }\n      },\n      \"gridPos\": {\n        \"h\": 4,\n  \
+    \      \"w\": 4,\n        \"x\": 8,\n        \"y\": 1\n      },\n      \"id\"\
+    : 3,\n      \"options\": {\n        \"colorMode\": \"value\",\n        \"graphMode\"\
+    : \"area\",\n        \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\"\
+    ,\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\
+    \n          ],\n          \"fields\": \"\",\n          \"values\": false\n   \
+    \     },\n        \"textMode\": \"auto\"\n      },\n      \"title\": \"Requests/sec\"\
+    ,\n      \"type\": \"stat\",\n      \"targets\": [\n        {\n          \"expr\"\
+    : \"sum(rate(inference_requests_total{cluster_id=~\\\"$cluster\\\",namespace=\\\
+    \"bert-inference\\\"}[5m]))\",\n          \"refId\": \"A\",\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          }\n        }\n      ]\n    },\n    {\n      \"datasource\": {\n  \
+    \      \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n   \
+    \   },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"thresholds\"\n          },\n          \"mappings\"\
+    : [],\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n    \
+    \        \"steps\": [\n              {\n                \"color\": \"green\",\n\
+    \                \"value\": null\n              },\n              {\n        \
+    \        \"color\": \"yellow\",\n                \"value\": 1\n              },\n\
+    \              {\n                \"color\": \"red\",\n                \"value\"\
+    : 5\n              }\n            ]\n          },\n          \"unit\": \"percent\"\
+    \n        }\n      },\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\"\
+    : 4,\n        \"x\": 12,\n        \"y\": 1\n      },\n      \"id\": 4,\n     \
+    \ \"options\": {\n        \"colorMode\": \"value\",\n        \"graphMode\": \"\
+    area\",\n        \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\"\
+    ,\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\
+    \n          ],\n          \"fields\": \"\",\n          \"values\": false\n   \
+    \     },\n        \"textMode\": \"auto\"\n      },\n      \"title\": \"Error Rate\"\
+    ,\n      \"type\": \"stat\",\n      \"targets\": [\n        {\n          \"expr\"\
+    : \"sum(rate(inference_requests_total{cluster_id=~\\\"$cluster\\\",namespace=\\\
+    \"bert-inference\\\",status=\\\"error\\\"}[5m])) / sum(rate(inference_requests_total{namespace=\\\
+    \"bert-inference\\\"}[5m])) * 100 or vector(0)\",\n          \"refId\": \"A\"\
+    ,\n          \"datasource\": {\n            \"type\": \"prometheus\",\n      \
+    \      \"uid\": \"PBFA97CFB590B2093\"\n          }\n        }\n      ]\n    },\n\
+    \    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"\
+    uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"color\": {\n            \"mode\": \"thresholds\"\n          },\n\
+    \          \"mappings\": [],\n          \"thresholds\": {\n            \"mode\"\
+    : \"absolute\",\n            \"steps\": [\n              {\n                \"\
+    color\": \"green\",\n                \"value\": null\n              }\n      \
+    \      ]\n          },\n          \"unit\": \"short\"\n        }\n      },\n \
+    \     \"gridPos\": {\n        \"h\": 4,\n        \"w\": 4,\n        \"x\": 16,\n\
+    \        \"y\": 1\n      },\n      \"id\": 5,\n      \"options\": {\n        \"\
+    colorMode\": \"value\",\n        \"graphMode\": \"none\",\n        \"justifyMode\"\
+    : \"auto\",\n        \"orientation\": \"auto\",\n        \"reduceOptions\": {\n\
+    \          \"calcs\": [\n            \"lastNotNull\"\n          ],\n         \
+    \ \"fields\": \"\",\n          \"values\": false\n        },\n        \"textMode\"\
+    : \"auto\"\n      },\n      \"title\": \"Active Pods\",\n      \"type\": \"stat\"\
+    ,\n      \"targets\": [\n        {\n          \"expr\": \"count(up{cluster_id=~\\\
+    \"$cluster\\\",job=\\\"bert-inference\\\"} == 1) or vector(0)\",\n          \"\
+    refId\": \"A\",\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          }\n        }\n      ]\n\
+    \    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n \
+    \       \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n \
+    \       \"defaults\": {\n          \"color\": {\n            \"mode\": \"thresholds\"\
+    \n          },\n          \"mappings\": [],\n          \"thresholds\": {\n   \
+    \         \"mode\": \"absolute\",\n            \"steps\": [\n              {\n\
+    \                \"color\": \"green\",\n                \"value\": null\n    \
+    \          }\n            ]\n          },\n          \"unit\": \"short\"\n   \
+    \     }\n      },\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 4,\n\
+    \        \"x\": 20,\n        \"y\": 1\n      },\n      \"id\": 6,\n      \"options\"\
+    : {\n        \"colorMode\": \"value\",\n        \"graphMode\": \"none\",\n   \
+    \     \"justifyMode\": \"auto\",\n        \"orientation\": \"auto\",\n       \
+    \ \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n\
+    \          ],\n          \"fields\": \"\",\n          \"values\": false\n    \
+    \    },\n        \"textMode\": \"auto\"\n      },\n      \"title\": \"GPUs Available\"\
+    ,\n      \"type\": \"stat\",\n      \"targets\": [\n        {\n          \"expr\"\
+    : \"count(count by (UUID) (DCGM_FI_DEV_GPU_TEMP)) or vector(0)\",\n          \"\
+    refId\": \"A\",\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          }\n        }\n      ]\n\
+    \    },\n    {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"\
+    h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 5\n      },\n \
+    \     \"id\": 101,\n      \"title\": \"Inference Performance\",\n      \"type\"\
+    : \"row\"\n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n\
+    \        \"defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"custom\": {\n            \"axisCenteredZero\": false,\n\
+    \            \"axisColorMode\": \"text\",\n            \"axisLabel\": \"\",\n\
+    \            \"axisPlacement\": \"auto\",\n            \"barAlignment\": 0,\n\
+    \            \"drawStyle\": \"line\",\n            \"fillOpacity\": 10,\n    \
+    \        \"gradientMode\": \"none\",\n            \"hideFrom\": {\n          \
+    \    \"legend\": false,\n              \"tooltip\": false,\n              \"viz\"\
+    : false\n            },\n            \"lineInterpolation\": \"linear\",\n    \
+    \        \"lineWidth\": 1,\n            \"pointSize\": 5,\n            \"scaleDistribution\"\
+    : {\n              \"type\": \"linear\"\n            },\n            \"showPoints\"\
+    : \"never\",\n            \"spanNulls\": false,\n            \"stacking\": {\n\
+    \              \"group\": \"A\",\n              \"mode\": \"none\"\n         \
+    \   },\n            \"thresholdsStyle\": {\n              \"mode\": \"off\"\n\
+    \            }\n          },\n          \"mappings\": [],\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              }\n            ]\n          },\n          \"unit\": \"ms\"\n  \
+    \      }\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n\
+    \        \"x\": 0,\n        \"y\": 6\n      },\n      \"id\": 10,\n      \"options\"\
+    : {\n        \"legend\": {\n          \"calcs\": [\n            \"mean\",\n  \
+    \          \"max\"\n          ],\n          \"displayMode\": \"table\",\n    \
+    \      \"placement\": \"bottom\"\n        },\n        \"tooltip\": {\n       \
+    \   \"mode\": \"multi\",\n          \"sort\": \"none\"\n        }\n      },\n\
+    \      \"title\": \"Request Latency Distribution\",\n      \"type\": \"timeseries\"\
+    ,\n      \"targets\": [\n        {\n          \"expr\": \"histogram_quantile(0.50,\
+    \ sum(rate(inference_request_duration_seconds_bucket{cluster_id=~\\\"$cluster\\\
+    \",namespace=\\\"bert-inference\\\"}[5m])) by (le)) * 1000\",\n          \"legendFormat\"\
+    : \"p50\",\n          \"refId\": \"A\",\n          \"datasource\": {\n       \
+    \     \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n\
+    \          }\n        },\n        {\n          \"expr\": \"histogram_quantile(0.90,\
+    \ sum(rate(inference_request_duration_seconds_bucket{cluster_id=~\\\"$cluster\\\
+    \",namespace=\\\"bert-inference\\\"}[5m])) by (le)) * 1000\",\n          \"legendFormat\"\
+    : \"p90\",\n          \"refId\": \"B\",\n          \"datasource\": {\n       \
+    \     \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n\
+    \          }\n        },\n        {\n          \"expr\": \"histogram_quantile(0.95,\
+    \ sum(rate(inference_request_duration_seconds_bucket{cluster_id=~\\\"$cluster\\\
+    \",namespace=\\\"bert-inference\\\"}[5m])) by (le)) * 1000\",\n          \"legendFormat\"\
+    : \"p95\",\n          \"refId\": \"C\",\n          \"datasource\": {\n       \
+    \     \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n\
+    \          }\n        },\n        {\n          \"expr\": \"histogram_quantile(0.99,\
+    \ sum(rate(inference_request_duration_seconds_bucket{cluster_id=~\\\"$cluster\\\
+    \",namespace=\\\"bert-inference\\\"}[5m])) by (le)) * 1000\",\n          \"legendFormat\"\
+    : \"p99\",\n          \"refId\": \"D\",\n          \"datasource\": {\n       \
+    \     \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n\
+    \          }\n        }\n      ]\n    },\n    {\n      \"datasource\": {\n   \
+    \     \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n    \
+    \  },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"palette-classic\"\n          },\n          \"custom\"\
+    : {\n            \"axisCenteredZero\": false,\n            \"axisColorMode\":\
+    \ \"text\",\n            \"axisLabel\": \"\",\n            \"axisPlacement\":\
+    \ \"auto\",\n            \"barAlignment\": 0,\n            \"drawStyle\": \"line\"\
+    ,\n            \"fillOpacity\": 10,\n            \"gradientMode\": \"none\",\n\
+    \            \"hideFrom\": {\n              \"legend\": false,\n             \
+    \ \"tooltip\": false,\n              \"viz\": false\n            },\n        \
+    \    \"lineInterpolation\": \"linear\",\n            \"lineWidth\": 1,\n     \
+    \       \"pointSize\": 5,\n            \"scaleDistribution\": {\n            \
+    \  \"type\": \"linear\"\n            },\n            \"showPoints\": \"never\"\
+    ,\n            \"spanNulls\": false,\n            \"stacking\": {\n          \
+    \    \"group\": \"A\",\n              \"mode\": \"none\"\n            },\n   \
+    \         \"thresholdsStyle\": {\n              \"mode\": \"off\"\n          \
+    \  }\n          },\n          \"mappings\": [],\n          \"thresholds\": {\n\
+    \            \"mode\": \"absolute\",\n            \"steps\": [\n             \
+    \ {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              }\n            ]\n          },\n          \"unit\": \"reqps\"\n\
+    \        }\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\":\
+    \ 12,\n        \"x\": 12,\n        \"y\": 6\n      },\n      \"id\": 11,\n   \
+    \   \"options\": {\n        \"legend\": {\n          \"calcs\": [\n          \
+    \  \"mean\",\n            \"max\"\n          ],\n          \"displayMode\": \"\
+    table\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\",\n          \"sort\": \"none\"\n        }\n\
+    \      },\n      \"title\": \"Request Throughput\",\n      \"type\": \"timeseries\"\
+    ,\n      \"targets\": [\n        {\n          \"expr\": \"sum(rate(inference_requests_total{cluster_id=~\\\
+    \"$cluster\\\",namespace=\\\"bert-inference\\\",status=\\\"success\\\"}[5m]))\"\
+    ,\n          \"legendFormat\": \"Success\",\n          \"refId\": \"A\",\n   \
+    \       \"datasource\": {\n            \"type\": \"prometheus\",\n           \
+    \ \"uid\": \"PBFA97CFB590B2093\"\n          }\n        },\n        {\n       \
+    \   \"expr\": \"sum(rate(inference_requests_total{cluster_id=~\\\"$cluster\\\"\
+    ,namespace=\\\"bert-inference\\\",status=\\\"error\\\"}[5m]))\",\n          \"\
+    legendFormat\": \"Error\",\n          \"refId\": \"B\",\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          }\n        }\n      ]\n    },\n    {\n      \"datasource\": {\n  \
+    \      \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n   \
+    \   },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"palette-classic\"\n          },\n          \"custom\"\
+    : {\n            \"axisCenteredZero\": false,\n            \"axisColorMode\":\
+    \ \"text\",\n            \"axisLabel\": \"\",\n            \"axisPlacement\":\
+    \ \"auto\",\n            \"barAlignment\": 0,\n            \"drawStyle\": \"bars\"\
+    ,\n            \"fillOpacity\": 100,\n            \"gradientMode\": \"none\",\n\
+    \            \"hideFrom\": {\n              \"legend\": false,\n             \
+    \ \"tooltip\": false,\n              \"viz\": false\n            },\n        \
+    \    \"lineInterpolation\": \"linear\",\n            \"lineWidth\": 1,\n     \
+    \       \"pointSize\": 5,\n            \"scaleDistribution\": {\n            \
+    \  \"type\": \"linear\"\n            },\n            \"showPoints\": \"never\"\
+    ,\n            \"spanNulls\": false,\n            \"stacking\": {\n          \
+    \    \"group\": \"A\",\n              \"mode\": \"normal\"\n            },\n \
+    \           \"thresholdsStyle\": {\n              \"mode\": \"off\"\n        \
+    \    }\n          },\n          \"mappings\": [],\n          \"thresholds\": {\n\
+    \            \"mode\": \"absolute\",\n            \"steps\": [\n             \
+    \ {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              }\n            ]\n          },\n          \"unit\": \"short\"\n\
+    \        }\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\":\
+    \ 12,\n        \"x\": 0,\n        \"y\": 14\n      },\n      \"id\": 12,\n   \
+    \   \"options\": {\n        \"legend\": {\n          \"calcs\": [],\n        \
+    \  \"displayMode\": \"list\",\n          \"placement\": \"bottom\"\n        },\n\
+    \        \"tooltip\": {\n          \"mode\": \"multi\",\n          \"sort\": \"\
+    none\"\n        }\n      },\n      \"title\": \"Batch Size Distribution\",\n \
+    \     \"type\": \"timeseries\",\n      \"targets\": [\n        {\n          \"\
+    expr\": \"sum(rate(inference_batch_size_bucket{cluster_id=~\\\"$cluster\\\",namespace=\\\
+    \"bert-inference\\\"}[5m])) by (le)\",\n          \"legendFormat\": \"{{le}}\"\
+    ,\n          \"refId\": \"A\",\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n          }\n \
+    \       }\n      ]\n    },\n    {\n      \"datasource\": {\n        \"type\":\
+    \ \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n          \
+    \  \"mode\": \"palette-classic\"\n          },\n          \"custom\": {\n    \
+    \        \"axisCenteredZero\": false,\n            \"axisColorMode\": \"text\"\
+    ,\n            \"axisLabel\": \"\",\n            \"axisPlacement\": \"auto\",\n\
+    \            \"barAlignment\": 0,\n            \"drawStyle\": \"line\",\n    \
+    \        \"fillOpacity\": 10,\n            \"gradientMode\": \"none\",\n     \
+    \       \"hideFrom\": {\n              \"legend\": false,\n              \"tooltip\"\
+    : false,\n              \"viz\": false\n            },\n            \"lineInterpolation\"\
+    : \"linear\",\n            \"lineWidth\": 1,\n            \"pointSize\": 5,\n\
+    \            \"scaleDistribution\": {\n              \"type\": \"linear\"\n  \
+    \          },\n            \"showPoints\": \"never\",\n            \"spanNulls\"\
+    : false,\n            \"stacking\": {\n              \"group\": \"A\",\n     \
+    \         \"mode\": \"none\"\n            },\n            \"thresholdsStyle\"\
+    : {\n              \"mode\": \"off\"\n            }\n          },\n          \"\
+    mappings\": [],\n          \"thresholds\": {\n            \"mode\": \"absolute\"\
+    ,\n            \"steps\": [\n              {\n                \"color\": \"green\"\
+    ,\n                \"value\": null\n              }\n            ]\n         \
+    \ },\n          \"unit\": \"short\"\n        }\n      },\n      \"gridPos\": {\n\
+    \        \"h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n        \"y\": 14\n\
+    \      },\n      \"id\": 13,\n      \"options\": {\n        \"legend\": {\n  \
+    \        \"calcs\": [\n            \"mean\"\n          ],\n          \"displayMode\"\
+    : \"table\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\",\n          \"sort\": \"none\"\n        }\n\
+    \      },\n      \"title\": \"Tokens Processed\",\n      \"type\": \"timeseries\"\
+    ,\n      \"targets\": [\n        {\n          \"expr\": \"sum(rate(inference_tokens_processed_total{cluster_id=~\\\
+    \"$cluster\\\",namespace=\\\"bert-inference\\\"}[5m]))\",\n          \"legendFormat\"\
+    : \"Tokens/sec\",\n          \"refId\": \"A\",\n          \"datasource\": {\n\
+    \            \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          }\n        }\n      ]\n    },\n    {\n      \"collapsed\": false,\n\
+    \      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n\
+    \        \"y\": 22\n      },\n      \"id\": 102,\n      \"title\": \"GPU Metrics\"\
+    ,\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\": {\n        \"\
+    type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n  \
+    \    \"fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n   \
+    \         \"mode\": \"thresholds\"\n          },\n          \"mappings\": [],\n\
+    \          \"max\": 100,\n          \"min\": 0,\n          \"thresholds\": {\n\
+    \            \"mode\": \"absolute\",\n            \"steps\": [\n             \
+    \ {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              },\n              {\n                \"color\": \"yellow\",\n \
+    \               \"value\": 70\n              },\n              {\n           \
+    \     \"color\": \"red\",\n                \"value\": 90\n              }\n  \
+    \          ]\n          },\n          \"unit\": \"percent\"\n        }\n     \
+    \ },\n      \"gridPos\": {\n        \"h\": 6,\n        \"w\": 6,\n        \"x\"\
+    : 0,\n        \"y\": 23\n      },\n      \"id\": 20,\n      \"options\": {\n \
+    \       \"orientation\": \"auto\",\n        \"reduceOptions\": {\n          \"\
+    calcs\": [\n            \"lastNotNull\"\n          ],\n          \"fields\": \"\
+    \",\n          \"values\": false\n        },\n        \"showThresholdLabels\"\
+    : false,\n        \"showThresholdMarkers\": true\n      },\n      \"title\": \"\
+    GPU Utilization\",\n      \"type\": \"gauge\",\n      \"targets\": [\n       \
+    \ {\n          \"expr\": \"avg(DCGM_FI_DEV_GPU_UTIL)\",\n          \"refId\":\
+    \ \"A\",\n          \"datasource\": {\n            \"type\": \"prometheus\",\n\
+    \            \"uid\": \"PBFA97CFB590B2093\"\n          }\n        }\n      ]\n\
+    \    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n \
+    \       \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n \
+    \       \"defaults\": {\n          \"color\": {\n            \"mode\": \"thresholds\"\
+    \n          },\n          \"mappings\": [],\n          \"max\": 100,\n       \
+    \   \"min\": 0,\n          \"thresholds\": {\n            \"mode\": \"absolute\"\
+    ,\n            \"steps\": [\n              {\n                \"color\": \"green\"\
+    ,\n                \"value\": null\n              },\n              {\n      \
+    \          \"color\": \"yellow\",\n                \"value\": 70\n           \
+    \   },\n              {\n                \"color\": \"red\",\n               \
+    \ \"value\": 90\n              }\n            ]\n          },\n          \"unit\"\
+    : \"percent\"\n        }\n      },\n      \"gridPos\": {\n        \"h\": 6,\n\
+    \        \"w\": 6,\n        \"x\": 6,\n        \"y\": 23\n      },\n      \"id\"\
+    : 21,\n      \"options\": {\n        \"orientation\": \"auto\",\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ],\n     \
+    \     \"fields\": \"\",\n          \"values\": false\n        },\n        \"showThresholdLabels\"\
+    : false,\n        \"showThresholdMarkers\": true\n      },\n      \"title\": \"\
+    GPU Memory Used\",\n      \"type\": \"gauge\",\n      \"targets\": [\n       \
+    \ {\n          \"expr\": \"avg(DCGM_FI_DEV_FB_USED / DCGM_FI_DEV_FB_FREE * 100)\"\
+    ,\n          \"refId\": \"A\",\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n          }\n \
+    \       }\n      ]\n    },\n    {\n      \"datasource\": {\n        \"type\":\
+    \ \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"color\": {\n          \
+    \  \"mode\": \"thresholds\"\n          },\n          \"mappings\": [],\n     \
+    \     \"max\": 100,\n          \"min\": 0,\n          \"thresholds\": {\n    \
+    \        \"mode\": \"absolute\",\n            \"steps\": [\n              {\n\
+    \                \"color\": \"green\",\n                \"value\": null\n    \
+    \          },\n              {\n                \"color\": \"yellow\",\n     \
+    \           \"value\": 70\n              },\n              {\n               \
+    \ \"color\": \"red\",\n                \"value\": 85\n              }\n      \
+    \      ]\n          },\n          \"unit\": \"celsius\"\n        }\n      },\n\
+    \      \"gridPos\": {\n        \"h\": 6,\n        \"w\": 6,\n        \"x\": 12,\n\
+    \        \"y\": 23\n      },\n      \"id\": 22,\n      \"options\": {\n      \
+    \  \"orientation\": \"auto\",\n        \"reduceOptions\": {\n          \"calcs\"\
+    : [\n            \"lastNotNull\"\n          ],\n          \"fields\": \"\",\n\
+    \          \"values\": false\n        },\n        \"showThresholdLabels\": false,\n\
+    \        \"showThresholdMarkers\": true\n      },\n      \"title\": \"GPU Temperature\"\
+    ,\n      \"type\": \"gauge\",\n      \"targets\": [\n        {\n          \"expr\"\
+    : \"avg(DCGM_FI_DEV_GPU_TEMP)\",\n          \"refId\": \"A\",\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          }\n        }\n      ]\n    },\n    {\n      \"datasource\": {\n  \
+    \      \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n   \
+    \   },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"thresholds\"\n          },\n          \"mappings\"\
+    : [],\n          \"thresholds\": {\n            \"mode\": \"absolute\",\n    \
+    \        \"steps\": [\n              {\n                \"color\": \"green\",\n\
+    \                \"value\": null\n              }\n            ]\n          },\n\
+    \          \"unit\": \"watt\"\n        }\n      },\n      \"gridPos\": {\n   \
+    \     \"h\": 6,\n        \"w\": 6,\n        \"x\": 18,\n        \"y\": 23\n  \
+    \    },\n      \"id\": 23,\n      \"options\": {\n        \"colorMode\": \"value\"\
+    ,\n        \"graphMode\": \"area\",\n        \"justifyMode\": \"auto\",\n    \
+    \    \"orientation\": \"auto\",\n        \"reduceOptions\": {\n          \"calcs\"\
+    : [\n            \"lastNotNull\"\n          ],\n          \"fields\": \"\",\n\
+    \          \"values\": false\n        },\n        \"textMode\": \"auto\"\n   \
+    \   },\n      \"title\": \"GPU Power\",\n      \"type\": \"stat\",\n      \"targets\"\
+    : [\n        {\n          \"expr\": \"sum(DCGM_FI_DEV_POWER_USAGE)\",\n      \
+    \    \"refId\": \"A\",\n          \"datasource\": {\n            \"type\": \"\
+    prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n          }\n     \
+    \   }\n      ]\n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n\
+    \        \"defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"custom\": {\n            \"axisCenteredZero\": false,\n\
+    \            \"axisColorMode\": \"text\",\n            \"axisLabel\": \"\",\n\
+    \            \"axisPlacement\": \"auto\",\n            \"barAlignment\": 0,\n\
+    \            \"drawStyle\": \"line\",\n            \"fillOpacity\": 10,\n    \
+    \        \"gradientMode\": \"none\",\n            \"hideFrom\": {\n          \
+    \    \"legend\": false,\n              \"tooltip\": false,\n              \"viz\"\
+    : false\n            },\n            \"lineInterpolation\": \"linear\",\n    \
+    \        \"lineWidth\": 1,\n            \"pointSize\": 5,\n            \"scaleDistribution\"\
+    : {\n              \"type\": \"linear\"\n            },\n            \"showPoints\"\
+    : \"never\",\n            \"spanNulls\": false,\n            \"stacking\": {\n\
+    \              \"group\": \"A\",\n              \"mode\": \"none\"\n         \
+    \   },\n            \"thresholdsStyle\": {\n              \"mode\": \"off\"\n\
+    \            }\n          },\n          \"mappings\": [],\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              }\n            ]\n          },\n          \"unit\": \"percent\"\
+    \n        }\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\"\
+    : 12,\n        \"x\": 0,\n        \"y\": 29\n      },\n      \"id\": 24,\n   \
+    \   \"options\": {\n        \"legend\": {\n          \"calcs\": [\n          \
+    \  \"mean\",\n            \"max\"\n          ],\n          \"displayMode\": \"\
+    table\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\",\n          \"sort\": \"none\"\n        }\n\
+    \      },\n      \"title\": \"GPU Utilization Over Time\",\n      \"type\": \"\
+    timeseries\",\n      \"targets\": [\n        {\n          \"expr\": \"DCGM_FI_DEV_GPU_UTIL\"\
+    ,\n          \"legendFormat\": \"GPU {{gpu}}\",\n          \"refId\": \"A\",\n\
+    \          \"datasource\": {\n            \"type\": \"prometheus\",\n        \
+    \    \"uid\": \"PBFA97CFB590B2093\"\n          }\n        }\n      ]\n    },\n\
+    \    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"\
+    uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"color\": {\n            \"mode\": \"palette-classic\"\n     \
+    \     },\n          \"custom\": {\n            \"axisCenteredZero\": false,\n\
+    \            \"axisColorMode\": \"text\",\n            \"axisLabel\": \"\",\n\
+    \            \"axisPlacement\": \"auto\",\n            \"barAlignment\": 0,\n\
+    \            \"drawStyle\": \"line\",\n            \"fillOpacity\": 10,\n    \
+    \        \"gradientMode\": \"none\",\n            \"hideFrom\": {\n          \
+    \    \"legend\": false,\n              \"tooltip\": false,\n              \"viz\"\
+    : false\n            },\n            \"lineInterpolation\": \"linear\",\n    \
+    \        \"lineWidth\": 1,\n            \"pointSize\": 5,\n            \"scaleDistribution\"\
+    : {\n              \"type\": \"linear\"\n            },\n            \"showPoints\"\
+    : \"never\",\n            \"spanNulls\": false,\n            \"stacking\": {\n\
+    \              \"group\": \"A\",\n              \"mode\": \"none\"\n         \
+    \   },\n            \"thresholdsStyle\": {\n              \"mode\": \"off\"\n\
+    \            }\n          },\n          \"mappings\": [],\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              }\n            ]\n          },\n          \"unit\": \"bytes\"\n\
+    \        }\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\":\
+    \ 12,\n        \"x\": 12,\n        \"y\": 29\n      },\n      \"id\": 25,\n  \
+    \    \"options\": {\n        \"legend\": {\n          \"calcs\": [\n         \
+    \   \"mean\",\n            \"max\"\n          ],\n          \"displayMode\": \"\
+    table\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\",\n          \"sort\": \"none\"\n        }\n\
+    \      },\n      \"title\": \"GPU Memory Usage Over Time\",\n      \"type\": \"\
+    timeseries\",\n      \"targets\": [\n        {\n          \"expr\": \"DCGM_FI_DEV_FB_USED\
+    \ * 1024 * 1024\",\n          \"legendFormat\": \"GPU {{gpu}} Used\",\n      \
+    \    \"refId\": \"A\",\n          \"datasource\": {\n            \"type\": \"\
+    prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n          }\n     \
+    \   },\n        {\n          \"expr\": \"DCGM_FI_DEV_FB_FREE * 1024 * 1024\",\n\
+    \          \"legendFormat\": \"GPU {{gpu}} Free\",\n          \"refId\": \"B\"\
+    ,\n          \"datasource\": {\n            \"type\": \"prometheus\",\n      \
+    \      \"uid\": \"PBFA97CFB590B2093\"\n          }\n        }\n      ]\n    },\n\
+    \    {\n      \"collapsed\": false,\n      \"gridPos\": {\n        \"h\": 1,\n\
+    \        \"w\": 24,\n        \"x\": 0,\n        \"y\": 37\n      },\n      \"\
+    id\": 103,\n      \"title\": \"Kubernetes Resources\",\n      \"type\": \"row\"\
+    \n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n\
+    \        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n\
+    \        \"defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"custom\": {\n            \"axisCenteredZero\": false,\n\
+    \            \"axisColorMode\": \"text\",\n            \"axisLabel\": \"\",\n\
+    \            \"axisPlacement\": \"auto\",\n            \"barAlignment\": 0,\n\
+    \            \"drawStyle\": \"line\",\n            \"fillOpacity\": 10,\n    \
+    \        \"gradientMode\": \"none\",\n            \"hideFrom\": {\n          \
+    \    \"legend\": false,\n              \"tooltip\": false,\n              \"viz\"\
+    : false\n            },\n            \"lineInterpolation\": \"linear\",\n    \
+    \        \"lineWidth\": 1,\n            \"pointSize\": 5,\n            \"scaleDistribution\"\
+    : {\n              \"type\": \"linear\"\n            },\n            \"showPoints\"\
+    : \"never\",\n            \"spanNulls\": false,\n            \"stacking\": {\n\
+    \              \"group\": \"A\",\n              \"mode\": \"none\"\n         \
+    \   },\n            \"thresholdsStyle\": {\n              \"mode\": \"off\"\n\
+    \            }\n          },\n          \"mappings\": [],\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              }\n            ]\n          },\n          \"unit\": \"short\"\n\
+    \        }\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\":\
+    \ 12,\n        \"x\": 0,\n        \"y\": 38\n      },\n      \"id\": 30,\n   \
+    \   \"options\": {\n        \"legend\": {\n          \"calcs\": [\n          \
+    \  \"mean\",\n            \"max\"\n          ],\n          \"displayMode\": \"\
+    table\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\",\n          \"sort\": \"none\"\n        }\n\
+    \      },\n      \"title\": \"Pod CPU Usage\",\n      \"type\": \"timeseries\"\
+    ,\n      \"targets\": [\n        {\n          \"expr\": \"sum(rate(container_cpu_usage_seconds_total{cluster_id=~\\\
+    \"$cluster\\\",namespace=\\\"bert-inference\\\",container!=\\\"\\\",container!=\\\
+    \"POD\\\"}[5m])) by (pod)\",\n          \"legendFormat\": \"{{pod}}\",\n     \
+    \     \"refId\": \"A\",\n          \"datasource\": {\n            \"type\": \"\
+    prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n          }\n     \
+    \   }\n      ]\n    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n\
+    \        \"defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"custom\": {\n            \"axisCenteredZero\": false,\n\
+    \            \"axisColorMode\": \"text\",\n            \"axisLabel\": \"\",\n\
+    \            \"axisPlacement\": \"auto\",\n            \"barAlignment\": 0,\n\
+    \            \"drawStyle\": \"line\",\n            \"fillOpacity\": 10,\n    \
+    \        \"gradientMode\": \"none\",\n            \"hideFrom\": {\n          \
+    \    \"legend\": false,\n              \"tooltip\": false,\n              \"viz\"\
+    : false\n            },\n            \"lineInterpolation\": \"linear\",\n    \
+    \        \"lineWidth\": 1,\n            \"pointSize\": 5,\n            \"scaleDistribution\"\
+    : {\n              \"type\": \"linear\"\n            },\n            \"showPoints\"\
+    : \"never\",\n            \"spanNulls\": false,\n            \"stacking\": {\n\
+    \              \"group\": \"A\",\n              \"mode\": \"none\"\n         \
+    \   },\n            \"thresholdsStyle\": {\n              \"mode\": \"off\"\n\
+    \            }\n          },\n          \"mappings\": [],\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              }\n            ]\n          },\n          \"unit\": \"bytes\"\n\
+    \        }\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\":\
+    \ 12,\n        \"x\": 12,\n        \"y\": 38\n      },\n      \"id\": 31,\n  \
+    \    \"options\": {\n        \"legend\": {\n          \"calcs\": [\n         \
+    \   \"mean\",\n            \"max\"\n          ],\n          \"displayMode\": \"\
+    table\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\",\n          \"sort\": \"none\"\n        }\n\
+    \      },\n      \"title\": \"Pod Memory Usage\",\n      \"type\": \"timeseries\"\
+    ,\n      \"targets\": [\n        {\n          \"expr\": \"sum(container_memory_usage_bytes{cluster_id=~\\\
+    \"$cluster\\\",namespace=\\\"bert-inference\\\",container!=\\\"\\\",container!=\\\
+    \"POD\\\"}) by (pod)\",\n          \"legendFormat\": \"{{pod}}\",\n          \"\
+    refId\": \"A\",\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          }\n        }\n      ]\n\
+    \    },\n    {\n      \"datasource\": {\n        \"type\": \"prometheus\",\n \
+    \       \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n \
+    \       \"defaults\": {\n          \"color\": {\n            \"mode\": \"palette-classic\"\
+    \n          },\n          \"custom\": {\n            \"axisCenteredZero\": false,\n\
+    \            \"axisColorMode\": \"text\",\n            \"axisLabel\": \"\",\n\
+    \            \"axisPlacement\": \"auto\",\n            \"barAlignment\": 0,\n\
+    \            \"drawStyle\": \"line\",\n            \"fillOpacity\": 10,\n    \
+    \        \"gradientMode\": \"none\",\n            \"hideFrom\": {\n          \
+    \    \"legend\": false,\n              \"tooltip\": false,\n              \"viz\"\
+    : false\n            },\n            \"lineInterpolation\": \"linear\",\n    \
+    \        \"lineWidth\": 1,\n            \"pointSize\": 5,\n            \"scaleDistribution\"\
+    : {\n              \"type\": \"linear\"\n            },\n            \"showPoints\"\
+    : \"never\",\n            \"spanNulls\": false,\n            \"stacking\": {\n\
+    \              \"group\": \"A\",\n              \"mode\": \"none\"\n         \
+    \   },\n            \"thresholdsStyle\": {\n              \"mode\": \"off\"\n\
+    \            }\n          },\n          \"mappings\": [],\n          \"thresholds\"\
+    : {\n            \"mode\": \"absolute\",\n            \"steps\": [\n         \
+    \     {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              }\n            ]\n          },\n          \"unit\": \"short\"\n\
+    \        }\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\":\
+    \ 12,\n        \"x\": 0,\n        \"y\": 46\n      },\n      \"id\": 32,\n   \
+    \   \"options\": {\n        \"legend\": {\n          \"calcs\": [],\n        \
+    \  \"displayMode\": \"list\",\n          \"placement\": \"bottom\"\n        },\n\
+    \        \"tooltip\": {\n          \"mode\": \"multi\",\n          \"sort\": \"\
+    none\"\n        }\n      },\n      \"title\": \"HPA Replica Count\",\n      \"\
+    type\": \"timeseries\",\n      \"targets\": [\n        {\n          \"expr\":\
+    \ \"kube_horizontalpodautoscaler_status_desired_replicas{cluster_id=~\\\"$cluster\\\
+    \",namespace=\\\"bert-inference\\\"}\",\n          \"legendFormat\": \"Desired\"\
+    ,\n          \"refId\": \"A\",\n          \"datasource\": {\n            \"type\"\
+    : \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n          }\n \
+    \       },\n        {\n          \"expr\": \"kube_horizontalpodautoscaler_status_current_replicas{cluster_id=~\\\
+    \"$cluster\\\",namespace=\\\"bert-inference\\\"}\",\n          \"legendFormat\"\
+    : \"Current\",\n          \"refId\": \"B\",\n          \"datasource\": {\n   \
+    \         \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          }\n        },\n        {\n          \"expr\": \"kube_horizontalpodautoscaler_spec_min_replicas{cluster_id=~\\\
+    \"$cluster\\\",namespace=\\\"bert-inference\\\"}\",\n          \"legendFormat\"\
+    : \"Min\",\n          \"refId\": \"C\",\n          \"datasource\": {\n       \
+    \     \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n\
+    \          }\n        },\n        {\n          \"expr\": \"kube_horizontalpodautoscaler_spec_max_replicas{cluster_id=~\\\
+    \"$cluster\\\",namespace=\\\"bert-inference\\\"}\",\n          \"legendFormat\"\
+    : \"Max\",\n          \"refId\": \"D\",\n          \"datasource\": {\n       \
+    \     \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n\
+    \          }\n        }\n      ]\n    },\n    {\n      \"datasource\": {\n   \
+    \     \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n    \
+    \  },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\"\
+    : {\n            \"mode\": \"palette-classic\"\n          },\n          \"custom\"\
+    : {\n            \"axisCenteredZero\": false,\n            \"axisColorMode\":\
+    \ \"text\",\n            \"axisLabel\": \"\",\n            \"axisPlacement\":\
+    \ \"auto\",\n            \"barAlignment\": 0,\n            \"drawStyle\": \"line\"\
+    ,\n            \"fillOpacity\": 10,\n            \"gradientMode\": \"none\",\n\
+    \            \"hideFrom\": {\n              \"legend\": false,\n             \
+    \ \"tooltip\": false,\n              \"viz\": false\n            },\n        \
+    \    \"lineInterpolation\": \"linear\",\n            \"lineWidth\": 1,\n     \
+    \       \"pointSize\": 5,\n            \"scaleDistribution\": {\n            \
+    \  \"type\": \"linear\"\n            },\n            \"showPoints\": \"never\"\
+    ,\n            \"spanNulls\": false,\n            \"stacking\": {\n          \
+    \    \"group\": \"A\",\n              \"mode\": \"none\"\n            },\n   \
+    \         \"thresholdsStyle\": {\n              \"mode\": \"off\"\n          \
+    \  }\n          },\n          \"mappings\": [],\n          \"thresholds\": {\n\
+    \            \"mode\": \"absolute\",\n            \"steps\": [\n             \
+    \ {\n                \"color\": \"green\",\n                \"value\": null\n\
+    \              }\n            ]\n          },\n          \"unit\": \"short\"\n\
+    \        }\n      },\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\":\
+    \ 12,\n        \"x\": 12,\n        \"y\": 46\n      },\n      \"id\": 33,\n  \
+    \    \"options\": {\n        \"legend\": {\n          \"calcs\": [],\n       \
+    \   \"displayMode\": \"list\",\n          \"placement\": \"bottom\"\n        },\n\
+    \        \"tooltip\": {\n          \"mode\": \"multi\",\n          \"sort\": \"\
+    none\"\n        }\n      },\n      \"title\": \"Pod Restarts\",\n      \"type\"\
+    : \"timeseries\",\n      \"targets\": [\n        {\n          \"expr\": \"sum(kube_pod_container_status_restarts_total{cluster_id=~\\\
+    \"$cluster\\\",namespace=\\\"bert-inference\\\"}) by (pod)\",\n          \"legendFormat\"\
+    : \"{{pod}}\",\n          \"refId\": \"A\",\n          \"datasource\": {\n   \
+    \         \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          }\n        }\n      ]\n    }\n  ],\n  \"refresh\": \"10s\",\n  \"\
+    schemaVersion\": 38,\n  \"style\": \"dark\",\n  \"tags\": [\n    \"bert\",\n \
+    \   \"inference\",\n    \"gpu\"\n  ],\n  \"templating\": {\n    \"list\": [\n\
+    \      {\n        \"name\": \"cluster\",\n        \"label\": \"Cluster\",\n  \
+    \      \"type\": \"query\",\n        \"datasource\": {\n          \"type\": \"\
+    prometheus\",\n          \"uid\": \"PBFA97CFB590B2093\"\n        },\n        \"\
+    query\": \"label_values(up{cluster_id!=\\\"\\\"}, cluster_id)\",\n        \"includeAll\"\
+    : true,\n        \"allValue\": \".*\",\n        \"current\": {\n          \"selected\"\
+    : true,\n          \"text\": \"All\",\n          \"value\": \"$__all\"\n     \
+    \   },\n        \"refresh\": 2,\n        \"sort\": 1,\n        \"multi\": true\n\
+    \      }\n    ]\n  },\n  \"time\": {\n    \"from\": \"now-1h\",\n    \"to\": \"\
+    now\"\n  },\n  \"timepicker\": {},\n  \"timezone\": \"browser\",\n  \"title\"\
+    : \"BERT Inference\",\n  \"uid\": \"bert-inference-main\",\n  \"version\": 1\n\
+    }"
+  federation-overview.json: "{\n  \"uid\": \"federation-overview\",\n  \"title\":\
+    \ \"Federation Overview\",\n  \"tags\": [\n    \"federation\",\n    \"overview\"\
+    \n  ],\n  \"timezone\": \"browser\",\n  \"schemaVersion\": 39,\n  \"version\"\
+    : 1,\n  \"refresh\": \"30s\",\n  \"time\": {\n    \"from\": \"now-1h\",\n    \"\
+    to\": \"now\"\n  },\n  \"templating\": {\n    \"list\": []\n  },\n  \"panels\"\
+    : [\n    {\n      \"id\": 1,\n      \"type\": \"row\",\n      \"title\": \"Cluster\
+    \ Status\",\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n   \
+    \     \"x\": 0,\n        \"y\": 0\n      }\n    },\n    {\n      \"id\": 2,\n\
+    \      \"type\": \"stat\",\n      \"title\": \"Clusters Reporting\",\n      \"\
+    gridPos\": {\n        \"h\": 4,\n        \"w\": 4,\n        \"x\": 0,\n      \
+    \  \"y\": 1\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n\
+    \        \"defaults\": {\n          \"thresholds\": {\n            \"steps\":\
+    \ [\n              {\n                \"color\": \"red\",\n                \"\
+    value\": null\n              },\n              {\n                \"color\": \"\
+    yellow\",\n                \"value\": 1\n              },\n              {\n \
+    \               \"color\": \"green\",\n                \"value\": 2\n        \
+    \      }\n            ]\n          },\n          \"mappings\": []\n        },\n\
+    \        \"overrides\": []\n      },\n      \"options\": {\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n      \
+    \  },\n        \"colorMode\": \"background\",\n        \"graphMode\": \"none\"\
+    \n      },\n      \"targets\": [\n        {\n          \"datasource\": {\n   \
+    \         \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"count(count by (cluster_id) (up{cluster_id!=\\\
+    \"\\\"}))\",\n          \"legendFormat\": \"\",\n          \"refId\": \"A\"\n\
+    \        }\n      ]\n    },\n    {\n      \"id\": 3,\n      \"type\": \"stat\"\
+    ,\n      \"title\": \"Hub Targets Up\",\n      \"gridPos\": {\n        \"h\":\
+    \ 4,\n        \"w\": 4,\n        \"x\": 4,\n        \"y\": 1\n      },\n     \
+    \ \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"thresholds\"\
+    : {\n            \"steps\": [\n              {\n                \"color\": \"\
+    red\",\n                \"value\": null\n              },\n              {\n \
+    \               \"color\": \"green\",\n                \"value\": 1\n        \
+    \      }\n            ]\n          },\n          \"unit\": \"short\"\n       \
+    \ },\n        \"overrides\": []\n      },\n      \"options\": {\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n      \
+    \  },\n        \"colorMode\": \"background\",\n        \"graphMode\": \"none\"\
+    \n      },\n      \"targets\": [\n        {\n          \"datasource\": {\n   \
+    \         \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"count(up{cluster_role=\\\"hub\\\"} == 1)\"\
+    ,\n          \"legendFormat\": \"\",\n          \"refId\": \"A\"\n        }\n\
+    \      ]\n    },\n    {\n      \"id\": 4,\n      \"type\": \"stat\",\n      \"\
+    title\": \"Edge Targets Up\",\n      \"gridPos\": {\n        \"h\": 4,\n     \
+    \   \"w\": 4,\n        \"x\": 8,\n        \"y\": 1\n      },\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"thresholds\"\
+    : {\n            \"steps\": [\n              {\n                \"color\": \"\
+    red\",\n                \"value\": null\n              },\n              {\n \
+    \               \"color\": \"green\",\n                \"value\": 1\n        \
+    \      }\n            ]\n          },\n          \"unit\": \"short\"\n       \
+    \ },\n        \"overrides\": []\n      },\n      \"options\": {\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n      \
+    \  },\n        \"colorMode\": \"background\",\n        \"graphMode\": \"none\"\
+    \n      },\n      \"targets\": [\n        {\n          \"datasource\": {\n   \
+    \         \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"count(up{cluster_role=\\\"edge\\\"} == 1)\"\
+    ,\n          \"legendFormat\": \"\",\n          \"refId\": \"A\"\n        }\n\
+    \      ]\n    },\n    {\n      \"id\": 5,\n      \"type\": \"stat\",\n      \"\
+    title\": \"Targets Down\",\n      \"gridPos\": {\n        \"h\": 4,\n        \"\
+    w\": 4,\n        \"x\": 12,\n        \"y\": 1\n      },\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"thresholds\"\
+    : {\n            \"steps\": [\n              {\n                \"color\": \"\
+    green\",\n                \"value\": null\n              },\n              {\n\
+    \                \"color\": \"red\",\n                \"value\": 1\n         \
+    \     }\n            ]\n          },\n          \"unit\": \"short\"\n        },\n\
+    \        \"overrides\": []\n      },\n      \"options\": {\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n      \
+    \  },\n        \"colorMode\": \"background\",\n        \"graphMode\": \"none\"\
+    \n      },\n      \"targets\": [\n        {\n          \"datasource\": {\n   \
+    \         \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"count(up == 0) or vector(0)\",\n       \
+    \   \"legendFormat\": \"\",\n          \"refId\": \"A\"\n        }\n      ]\n\
+    \    },\n    {\n      \"id\": 6,\n      \"type\": \"stat\",\n      \"title\":\
+    \ \"Total GPUs\",\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 4,\n\
+    \        \"x\": 16,\n        \"y\": 1\n      },\n      \"datasource\": {\n   \
+    \     \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n    \
+    \  },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"thresholds\"\
+    : {\n            \"steps\": [\n              {\n                \"color\": \"\
+    red\",\n                \"value\": null\n              },\n              {\n \
+    \               \"color\": \"green\",\n                \"value\": 1\n        \
+    \      }\n            ]\n          },\n          \"unit\": \"short\"\n       \
+    \ },\n        \"overrides\": []\n      },\n      \"options\": {\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n      \
+    \  },\n        \"colorMode\": \"background\",\n        \"graphMode\": \"none\"\
+    \n      },\n      \"targets\": [\n        {\n          \"datasource\": {\n   \
+    \         \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"count(count by (UUID) (DCGM_FI_DEV_GPU_TEMP))\"\
+    ,\n          \"legendFormat\": \"\",\n          \"refId\": \"A\"\n        }\n\
+    \      ]\n    },\n    {\n      \"id\": 7,\n      \"type\": \"stat\",\n      \"\
+    title\": \"Gateway\",\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\"\
+    : 4,\n        \"x\": 20,\n        \"y\": 1\n      },\n      \"datasource\": {\n\
+    \        \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n \
+    \     },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"thresholds\"\
+    : {\n            \"steps\": [\n              {\n                \"color\": \"\
+    red\",\n                \"value\": null\n              },\n              {\n \
+    \               \"color\": \"green\",\n                \"value\": 1\n        \
+    \      }\n            ]\n          },\n          \"mappings\": [\n           \
+    \ {\n              \"type\": \"value\",\n              \"options\": {\n      \
+    \          \"1\": {\n                  \"text\": \"UP\",\n                  \"\
+    color\": \"green\"\n                },\n                \"0\": {\n           \
+    \       \"text\": \"DOWN\",\n                  \"color\": \"red\"\n          \
+    \      }\n              }\n            }\n          ]\n        },\n        \"\
+    overrides\": []\n      },\n      \"options\": {\n        \"reduceOptions\": {\n\
+    \          \"calcs\": [\n            \"lastNotNull\"\n          ]\n        },\n\
+    \        \"colorMode\": \"background\",\n        \"graphMode\": \"none\"\n   \
+    \   },\n      \"targets\": [\n        {\n          \"datasource\": {\n       \
+    \     \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n\
+    \          },\n          \"expr\": \"count(up{hub_received_at=~\\\".+\\\"}) >\
+    \ bool 0\",\n          \"legendFormat\": \"\",\n          \"refId\": \"A\"\n \
+    \       }\n      ]\n    },\n    {\n      \"id\": 10,\n      \"type\": \"row\"\
+    ,\n      \"title\": \"Target Details\",\n      \"gridPos\": {\n        \"h\":\
+    \ 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 5\n      }\n    },\n\
+    \    {\n      \"id\": 11,\n      \"type\": \"table\",\n      \"title\": \"Targets\
+    \ by Cluster & Job\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\"\
+    : 12,\n        \"x\": 0,\n        \"y\": 6\n      },\n      \"datasource\": {\n\
+    \        \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n \
+    \     },\n      \"fieldConfig\": {\n        \"defaults\": {},\n        \"overrides\"\
+    : [\n          {\n            \"matcher\": {\n              \"id\": \"byName\"\
+    ,\n              \"options\": \"Value\"\n            },\n            \"properties\"\
+    : [\n              {\n                \"id\": \"custom.displayMode\",\n      \
+    \          \"value\": \"color-background\"\n              },\n              {\n\
+    \                \"id\": \"thresholds\",\n                \"value\": {\n     \
+    \             \"steps\": [\n                    {\n                      \"color\"\
+    : \"red\",\n                      \"value\": null\n                    },\n  \
+    \                  {\n                      \"color\": \"green\",\n          \
+    \            \"value\": 1\n                    }\n                  ]\n      \
+    \          }\n              },\n              {\n                \"id\": \"mappings\"\
+    ,\n                \"value\": [\n                  {\n                    \"type\"\
+    : \"value\",\n                    \"options\": {\n                      \"1\"\
+    : {\n                        \"text\": \"UP\"\n                      },\n    \
+    \                  \"0\": {\n                        \"text\": \"DOWN\"\n    \
+    \                  }\n                    }\n                  }\n           \
+    \     ]\n              }\n            ]\n          }\n        ]\n      },\n  \
+    \    \"options\": {\n        \"showHeader\": true,\n        \"sortBy\": [\n  \
+    \        {\n            \"displayName\": \"cluster_id\",\n            \"desc\"\
+    : false\n          }\n        ]\n      },\n      \"targets\": [\n        {\n \
+    \         \"datasource\": {\n            \"type\": \"prometheus\",\n         \
+    \   \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\": \"up\",\n\
+    \          \"format\": \"table\",\n          \"instant\": true,\n          \"\
+    legendFormat\": \"\",\n          \"refId\": \"A\"\n        }\n      ],\n     \
+    \ \"transformations\": [\n        {\n          \"id\": \"filterFieldsByName\"\
+    ,\n          \"options\": {\n            \"include\": {\n              \"names\"\
+    : [\n                \"cluster_id\",\n                \"cluster_role\",\n    \
+    \            \"job\",\n                \"instance\",\n                \"k8s_node_name\"\
+    ,\n                \"Value\"\n              ]\n            }\n          }\n  \
+    \      },\n        {\n          \"id\": \"organize\",\n          \"options\":\
+    \ {\n            \"renameByName\": {\n              \"cluster_id\": \"Cluster\"\
+    ,\n              \"cluster_role\": \"Role\",\n              \"job\": \"Job\",\n\
+    \              \"instance\": \"Instance\",\n              \"k8s_node_name\": \"\
+    Node\",\n              \"Value\": \"Status\"\n            }\n          }\n   \
+    \     }\n      ]\n    },\n    {\n      \"id\": 12,\n      \"type\": \"timeseries\"\
+    ,\n      \"title\": \"Targets Up Over Time\",\n      \"gridPos\": {\n        \"\
+    h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n        \"y\": 6\n      },\n\
+    \      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\":\
+    \ \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"custom\": {\n            \"drawStyle\": \"line\",\n         \
+    \   \"lineWidth\": 2,\n            \"fillOpacity\": 20,\n            \"stacking\"\
+    : {\n              \"mode\": \"normal\"\n            }\n          }\n        },\n\
+    \        \"overrides\": []\n      },\n      \"options\": {\n        \"legend\"\
+    : {\n          \"displayMode\": \"list\",\n          \"placement\": \"bottom\"\
+    \n        },\n        \"tooltip\": {\n          \"mode\": \"multi\"\n        }\n\
+    \      },\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"count(up{cluster_role=\\\"hub\\\"} == 1)\"\
+    ,\n          \"legendFormat\": \"Hub\",\n          \"refId\": \"A\"\n        },\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"count(up{cluster_role=\\\"edge\\\"} == 1)\",\n          \"legendFormat\":\
+    \ \"Edge\",\n          \"refId\": \"B\"\n        }\n      ]\n    },\n    {\n \
+    \     \"id\": 20,\n      \"type\": \"row\",\n      \"title\": \"Inference Across\
+    \ Clusters\",\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n \
+    \       \"x\": 0,\n        \"y\": 14\n      }\n    },\n    {\n      \"id\": 21,\n\
+    \      \"type\": \"timeseries\",\n      \"title\": \"Inference Request Rate by\
+    \ Cluster\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n  \
+    \      \"x\": 0,\n        \"y\": 15\n      },\n      \"datasource\": {\n     \
+    \   \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n\
+    \      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"reqps\"\
+    ,\n          \"custom\": {\n            \"drawStyle\": \"line\",\n           \
+    \ \"lineWidth\": 2,\n            \"fillOpacity\": 10\n          }\n        },\n\
+    \        \"overrides\": []\n      },\n      \"options\": {\n        \"legend\"\
+    : {\n          \"displayMode\": \"list\",\n          \"placement\": \"bottom\"\
+    \n        },\n        \"tooltip\": {\n          \"mode\": \"multi\"\n        }\n\
+    \      },\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"sum by (cluster_id) (rate(inference_requests_total[5m]))\"\
+    ,\n          \"legendFormat\": \"{{cluster_id}}\",\n          \"refId\": \"A\"\
+    \n        }\n      ]\n    },\n    {\n      \"id\": 22,\n      \"type\": \"timeseries\"\
+    ,\n      \"title\": \"P95 Latency by Cluster\",\n      \"gridPos\": {\n      \
+    \  \"h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n        \"y\": 15\n    \
+    \  },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n        \"\
+    uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"unit\": \"ms\",\n          \"custom\": {\n            \"drawStyle\"\
+    : \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 10\n\
+    \          }\n        },\n        \"overrides\": []\n      },\n      \"options\"\
+    : {\n        \"legend\": {\n          \"displayMode\": \"list\",\n          \"\
+    placement\": \"bottom\"\n        },\n        \"tooltip\": {\n          \"mode\"\
+    : \"multi\"\n        }\n      },\n      \"targets\": [\n        {\n          \"\
+    datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
+    PBFA97CFB590B2093\"\n          },\n          \"expr\": \"histogram_quantile(0.95,\
+    \ sum by (le, cluster_id) (rate(inference_request_duration_seconds_bucket[5m])))\
+    \ * 1000\",\n          \"legendFormat\": \"{{cluster_id}}\",\n          \"refId\"\
+    : \"A\"\n        }\n      ]\n    },\n    {\n      \"id\": 23,\n      \"type\"\
+    : \"timeseries\",\n      \"title\": \"Error Rate by Cluster\",\n      \"gridPos\"\
+    : {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 0,\n        \"y\":\
+    \ 23\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n \
+    \       \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n \
+    \       \"defaults\": {\n          \"unit\": \"percentunit\",\n          \"custom\"\
+    : {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n   \
+    \         \"fillOpacity\": 10\n          },\n          \"max\": 1,\n         \
+    \ \"min\": 0\n        },\n        \"overrides\": []\n      },\n      \"options\"\
+    : {\n        \"legend\": {\n          \"displayMode\": \"list\",\n          \"\
+    placement\": \"bottom\"\n        },\n        \"tooltip\": {\n          \"mode\"\
+    : \"multi\"\n        }\n      },\n      \"targets\": [\n        {\n          \"\
+    datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
+    PBFA97CFB590B2093\"\n          },\n          \"expr\": \"sum by (cluster_id) (rate(inference_requests_total{status=\\\
+    \"error\\\"}[5m])) / sum by (cluster_id) (rate(inference_requests_total[5m]))\"\
+    ,\n          \"legendFormat\": \"{{cluster_id}}\",\n          \"refId\": \"A\"\
+    \n        }\n      ]\n    },\n    {\n      \"id\": 24,\n      \"type\": \"timeseries\"\
+    ,\n      \"title\": \"Tokens Processed Rate by Cluster\",\n      \"gridPos\":\
+    \ {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n        \"y\"\
+    : 23\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n \
+    \       \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n \
+    \       \"defaults\": {\n          \"unit\": \"short\",\n          \"custom\"\
+    : {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n   \
+    \         \"fillOpacity\": 10\n          }\n        },\n        \"overrides\"\
+    : []\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\"\
+    : \"list\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\"\n        }\n      },\n      \"targets\": [\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"sum by (cluster_id) (rate(inference_tokens_processed_total[5m]))\",\n    \
+    \      \"legendFormat\": \"{{cluster_id}}\",\n          \"refId\": \"A\"\n   \
+    \     }\n      ]\n    },\n    {\n      \"id\": 30,\n      \"type\": \"row\",\n\
+    \      \"title\": \"GPU Overview\",\n      \"gridPos\": {\n        \"h\": 1,\n\
+    \        \"w\": 24,\n        \"x\": 0,\n        \"y\": 31\n      }\n    },\n \
+    \   {\n      \"id\": 31,\n      \"type\": \"timeseries\",\n      \"title\": \"\
+    GPU Utilization by Cluster\",\n      \"gridPos\": {\n        \"h\": 8,\n     \
+    \   \"w\": 12,\n        \"x\": 0,\n        \"y\": 32\n      },\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\"\
+    : \"percent\",\n          \"custom\": {\n            \"drawStyle\": \"line\",\n\
+    \            \"lineWidth\": 2,\n            \"fillOpacity\": 10\n          },\n\
+    \          \"max\": 100,\n          \"min\": 0\n        },\n        \"overrides\"\
+    : []\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\"\
+    : \"list\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\"\n        }\n      },\n      \"targets\": [\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"avg by (cluster_id) (DCGM_FI_DEV_GPU_UTIL)\",\n          \"legendFormat\"\
+    : \"{{cluster_id}}\",\n          \"refId\": \"A\"\n        }\n      ]\n    },\n\
+    \    {\n      \"id\": 32,\n      \"type\": \"timeseries\",\n      \"title\": \"\
+    GPU Memory Used by Cluster\",\n      \"gridPos\": {\n        \"h\": 8,\n     \
+    \   \"w\": 12,\n        \"x\": 12,\n        \"y\": 32\n      },\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\"\
+    : \"decmbytes\",\n          \"custom\": {\n            \"drawStyle\": \"line\"\
+    ,\n            \"lineWidth\": 2,\n            \"fillOpacity\": 10\n          }\n\
+    \        },\n        \"overrides\": []\n      },\n      \"options\": {\n     \
+    \   \"legend\": {\n          \"displayMode\": \"list\",\n          \"placement\"\
+    : \"bottom\"\n        },\n        \"tooltip\": {\n          \"mode\": \"multi\"\
+    \n        }\n      },\n      \"targets\": [\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"sum by (cluster_id) (DCGM_FI_DEV_FB_USED)\"\
+    ,\n          \"legendFormat\": \"{{cluster_id}}\",\n          \"refId\": \"A\"\
+    \n        }\n      ]\n    }\n  ]\n}"
+  gpu-health.json: "{\n  \"uid\": \"gpu-health\",\n  \"title\": \"GPU Health\",\n\
+    \  \"tags\": [\n    \"gpu\",\n    \"dcgm\",\n    \"nvidia\"\n  ],\n  \"timezone\"\
+    : \"browser\",\n  \"schemaVersion\": 39,\n  \"version\": 1,\n  \"refresh\": \"\
+    30s\",\n  \"time\": {\n    \"from\": \"now-1h\",\n    \"to\": \"now\"\n  },\n\
+    \  \"templating\": {\n    \"list\": [\n      {\n        \"name\": \"cluster\"\
+    ,\n        \"label\": \"Cluster\",\n        \"type\": \"query\",\n        \"datasource\"\
+    : {\n          \"type\": \"prometheus\",\n          \"uid\": \"PBFA97CFB590B2093\"\
+    \n        },\n        \"query\": \"label_values(up{cluster_id!=\\\"\\\"}, cluster_id)\"\
+    ,\n        \"includeAll\": true,\n        \"allValue\": \".*\",\n        \"current\"\
+    : {\n          \"selected\": true,\n          \"text\": \"All\",\n          \"\
+    value\": \"$__all\"\n        },\n        \"refresh\": 2,\n        \"sort\": 1,\n\
+    \        \"multi\": true\n      }\n    ]\n  },\n  \"panels\": [\n    {\n     \
+    \ \"id\": 1,\n      \"type\": \"row\",\n      \"title\": \"GPU Overview\",\n \
+    \     \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n\
+    \        \"y\": 0\n      }\n    },\n    {\n      \"id\": 2,\n      \"type\": \"\
+    stat\",\n      \"title\": \"GPUs Detected\",\n      \"gridPos\": {\n        \"\
+    h\": 4,\n        \"w\": 4,\n        \"x\": 0,\n        \"y\": 1\n      },\n  \
+    \    \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"\
+    PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"thresholds\": {\n            \"steps\": [\n              {\n\
+    \                \"color\": \"red\",\n                \"value\": null\n      \
+    \        },\n              {\n                \"color\": \"green\",\n        \
+    \        \"value\": 1\n              }\n            ]\n          }\n        },\n\
+    \        \"overrides\": []\n      },\n      \"options\": {\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n      \
+    \  },\n        \"colorMode\": \"background\",\n        \"graphMode\": \"none\"\
+    \n      },\n      \"targets\": [\n        {\n          \"datasource\": {\n   \
+    \         \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"count(count by (UUID) (DCGM_FI_DEV_GPU_TEMP{cluster_id=~\\\
+    \"$cluster\\\"}))\",\n          \"refId\": \"A\"\n        }\n      ]\n    },\n\
+    \    {\n      \"id\": 3,\n      \"type\": \"gauge\",\n      \"title\": \"Avg GPU\
+    \ Utilization\",\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 5,\n\
+    \        \"x\": 4,\n        \"y\": 1\n      },\n      \"datasource\": {\n    \
+    \    \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n     \
+    \ },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"\
+    percent\",\n          \"max\": 100,\n          \"min\": 0,\n          \"thresholds\"\
+    : {\n            \"steps\": [\n              {\n                \"color\": \"\
+    green\",\n                \"value\": null\n              },\n              {\n\
+    \                \"color\": \"yellow\",\n                \"value\": 80\n     \
+    \         },\n              {\n                \"color\": \"red\",\n         \
+    \       \"value\": 95\n              }\n            ]\n          }\n        },\n\
+    \        \"overrides\": []\n      },\n      \"options\": {\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n      \
+    \  }\n      },\n      \"targets\": [\n        {\n          \"datasource\": {\n\
+    \            \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"avg(DCGM_FI_DEV_GPU_UTIL{cluster_id=~\\\"\
+    $cluster\\\"})\",\n          \"refId\": \"A\"\n        }\n      ]\n    },\n  \
+    \  {\n      \"id\": 4,\n      \"type\": \"gauge\",\n      \"title\": \"Max GPU\
+    \ Temp\",\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 5,\n      \
+    \  \"x\": 9,\n        \"y\": 1\n      },\n      \"datasource\": {\n        \"\
+    type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n  \
+    \    \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"celsius\"\
+    ,\n          \"max\": 100,\n          \"min\": 0,\n          \"thresholds\": {\n\
+    \            \"steps\": [\n              {\n                \"color\": \"green\"\
+    ,\n                \"value\": null\n              },\n              {\n      \
+    \          \"color\": \"yellow\",\n                \"value\": 75\n           \
+    \   },\n              {\n                \"color\": \"red\",\n               \
+    \ \"value\": 90\n              }\n            ]\n          }\n        },\n   \
+    \     \"overrides\": []\n      },\n      \"options\": {\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n      \
+    \  }\n      },\n      \"targets\": [\n        {\n          \"datasource\": {\n\
+    \            \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"max(DCGM_FI_DEV_GPU_TEMP{cluster_id=~\\\"\
+    $cluster\\\"})\",\n          \"refId\": \"A\"\n        }\n      ]\n    },\n  \
+    \  {\n      \"id\": 5,\n      \"type\": \"stat\",\n      \"title\": \"Total Power\
+    \ Draw\",\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 5,\n      \
+    \  \"x\": 14,\n        \"y\": 1\n      },\n      \"datasource\": {\n        \"\
+    type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n  \
+    \    \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"watt\"\
+    ,\n          \"thresholds\": {\n            \"steps\": [\n              {\n  \
+    \              \"color\": \"green\",\n                \"value\": null\n      \
+    \        },\n              {\n                \"color\": \"yellow\",\n       \
+    \         \"value\": 200\n              },\n              {\n                \"\
+    color\": \"red\",\n                \"value\": 300\n              }\n         \
+    \   ]\n          }\n        },\n        \"overrides\": []\n      },\n      \"\
+    options\": {\n        \"reduceOptions\": {\n          \"calcs\": [\n         \
+    \   \"lastNotNull\"\n          ]\n        },\n        \"colorMode\": \"background\"\
+    ,\n        \"graphMode\": \"area\"\n      },\n      \"targets\": [\n        {\n\
+    \          \"datasource\": {\n            \"type\": \"prometheus\",\n        \
+    \    \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\": \"sum(DCGM_FI_DEV_POWER_USAGE{cluster_id=~\\\
+    \"$cluster\\\"})\",\n          \"refId\": \"A\"\n        }\n      ]\n    },\n\
+    \    {\n      \"id\": 6,\n      \"type\": \"stat\",\n      \"title\": \"XID Errors\"\
+    ,\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 5,\n        \"x\":\
+    \ 19,\n        \"y\": 1\n      },\n      \"datasource\": {\n        \"type\":\
+    \ \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"thresholds\": {\n     \
+    \       \"steps\": [\n              {\n                \"color\": \"green\",\n\
+    \                \"value\": null\n              },\n              {\n        \
+    \        \"color\": \"red\",\n                \"value\": 1\n              }\n\
+    \            ]\n          }\n        },\n        \"overrides\": []\n      },\n\
+    \      \"options\": {\n        \"reduceOptions\": {\n          \"calcs\": [\n\
+    \            \"lastNotNull\"\n          ]\n        },\n        \"colorMode\":\
+    \ \"background\",\n        \"graphMode\": \"none\"\n      },\n      \"targets\"\
+    : [\n        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"sum(DCGM_FI_DEV_XID_ERRORS{cluster_id=~\\\"$cluster\\\"}) or vector(0)\",\n\
+    \          \"refId\": \"A\"\n        }\n      ]\n    },\n    {\n      \"id\":\
+    \ 10,\n      \"type\": \"row\",\n      \"title\": \"Utilization & Compute\",\n\
+    \      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n\
+    \        \"y\": 5\n      }\n    },\n    {\n      \"id\": 11,\n      \"type\":\
+    \ \"timeseries\",\n      \"title\": \"GPU Utilization\",\n      \"gridPos\": {\n\
+    \        \"h\": 8,\n        \"w\": 12,\n        \"x\": 0,\n        \"y\": 6\n\
+    \      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n      \
+    \  \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n      \
+    \  \"defaults\": {\n          \"unit\": \"percent\",\n          \"max\": 100,\n\
+    \          \"min\": 0,\n          \"custom\": {\n            \"drawStyle\": \"\
+    line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 20\n    \
+    \      }\n        },\n        \"overrides\": []\n      },\n      \"options\":\
+    \ {\n        \"legend\": {\n          \"displayMode\": \"list\",\n          \"\
+    placement\": \"bottom\"\n        },\n        \"tooltip\": {\n          \"mode\"\
+    : \"multi\"\n        }\n      },\n      \"targets\": [\n        {\n          \"\
+    datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
+    PBFA97CFB590B2093\"\n          },\n          \"expr\": \"DCGM_FI_DEV_GPU_UTIL{cluster_id=~\\\
+    \"$cluster\\\"}\",\n          \"legendFormat\": \"{{gpu}} ({{cluster_id}})\",\n\
+    \          \"refId\": \"A\"\n        }\n      ]\n    },\n    {\n      \"id\":\
+    \ 12,\n      \"type\": \"timeseries\",\n      \"title\": \"Memory Copy Utilization\"\
+    ,\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\"\
+    : 12,\n        \"y\": 6\n      },\n      \"datasource\": {\n        \"type\":\
+    \ \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"percent\",\n\
+    \          \"max\": 100,\n          \"min\": 0,\n          \"custom\": {\n   \
+    \         \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n          \
+    \  \"fillOpacity\": 20\n          }\n        },\n        \"overrides\": []\n \
+    \     },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\"\
+    : \"list\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\"\n        }\n      },\n      \"targets\": [\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"DCGM_FI_DEV_MEM_COPY_UTIL{cluster_id=~\\\"$cluster\\\"}\",\n          \"legendFormat\"\
+    : \"{{gpu}} ({{cluster_id}})\",\n          \"refId\": \"A\"\n        }\n     \
+    \ ]\n    },\n    {\n      \"id\": 20,\n      \"type\": \"row\",\n      \"title\"\
+    : \"GPU Memory\",\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n\
+    \        \"x\": 0,\n        \"y\": 14\n      }\n    },\n    {\n      \"id\": 21,\n\
+    \      \"type\": \"timeseries\",\n      \"title\": \"Framebuffer Memory Used\"\
+    ,\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\"\
+    : 0,\n        \"y\": 15\n      },\n      \"datasource\": {\n        \"type\":\
+    \ \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"decmbytes\",\n\
+    \          \"custom\": {\n            \"drawStyle\": \"line\",\n            \"\
+    lineWidth\": 2,\n            \"fillOpacity\": 20\n          }\n        },\n  \
+    \      \"overrides\": []\n      },\n      \"options\": {\n        \"legend\":\
+    \ {\n          \"displayMode\": \"list\",\n          \"placement\": \"bottom\"\
+    \n        },\n        \"tooltip\": {\n          \"mode\": \"multi\"\n        }\n\
+    \      },\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"DCGM_FI_DEV_FB_USED{cluster_id=~\\\"$cluster\\\
+    \"}\",\n          \"legendFormat\": \"Used {{gpu}} ({{cluster_id}})\",\n     \
+    \     \"refId\": \"A\"\n        },\n        {\n          \"datasource\": {\n \
+    \           \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"DCGM_FI_DEV_FB_FREE{cluster_id=~\\\"$cluster\\\
+    \"}\",\n          \"legendFormat\": \"Free {{gpu}} ({{cluster_id}})\",\n     \
+    \     \"refId\": \"B\"\n        }\n      ]\n    },\n    {\n      \"id\": 22,\n\
+    \      \"type\": \"timeseries\",\n      \"title\": \"Framebuffer Memory Utilization\
+    \ %\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"\
+    x\": 12,\n        \"y\": 15\n      },\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"percent\",\n\
+    \          \"max\": 100,\n          \"min\": 0,\n          \"custom\": {\n   \
+    \         \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n          \
+    \  \"fillOpacity\": 20\n          }\n        },\n        \"overrides\": []\n \
+    \     },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\"\
+    : \"list\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\"\n        }\n      },\n      \"targets\": [\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"DCGM_FI_DEV_FB_USED{cluster_id=~\\\"$cluster\\\"} / (DCGM_FI_DEV_FB_USED{cluster_id=~\\\
+    \"$cluster\\\"} + DCGM_FI_DEV_FB_FREE{cluster_id=~\\\"$cluster\\\"}) * 100\",\n\
+    \          \"legendFormat\": \"{{gpu}} ({{cluster_id}})\",\n          \"refId\"\
+    : \"A\"\n        }\n      ]\n    },\n    {\n      \"id\": 30,\n      \"type\"\
+    : \"row\",\n      \"title\": \"Thermal & Power\",\n      \"gridPos\": {\n    \
+    \    \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 23\n   \
+    \   }\n    },\n    {\n      \"id\": 31,\n      \"type\": \"timeseries\",\n   \
+    \   \"title\": \"GPU Temperature\",\n      \"gridPos\": {\n        \"h\": 8,\n\
+    \        \"w\": 8,\n        \"x\": 0,\n        \"y\": 24\n      },\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\"\
+    : \"celsius\",\n          \"custom\": {\n            \"drawStyle\": \"line\",\n\
+    \            \"lineWidth\": 2,\n            \"fillOpacity\": 10\n          },\n\
+    \          \"thresholds\": {\n            \"mode\": \"absolute\",\n          \
+    \  \"steps\": [\n              {\n                \"color\": \"green\",\n    \
+    \            \"value\": null\n              },\n              {\n            \
+    \    \"color\": \"yellow\",\n                \"value\": 75\n              },\n\
+    \              {\n                \"color\": \"red\",\n                \"value\"\
+    : 90\n              }\n            ]\n          }\n        },\n        \"overrides\"\
+    : []\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\"\
+    : \"list\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\"\n        }\n      },\n      \"targets\": [\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"DCGM_FI_DEV_GPU_TEMP{cluster_id=~\\\"$cluster\\\"}\",\n          \"legendFormat\"\
+    : \"GPU {{gpu}} ({{cluster_id}})\",\n          \"refId\": \"A\"\n        }\n \
+    \     ]\n    },\n    {\n      \"id\": 32,\n      \"type\": \"timeseries\",\n \
+    \     \"title\": \"GPU Memory Temperature\",\n      \"gridPos\": {\n        \"\
+    h\": 8,\n        \"w\": 8,\n        \"x\": 8,\n        \"y\": 24\n      },\n \
+    \     \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"\
+    PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n        \"defaults\"\
+    : {\n          \"unit\": \"celsius\",\n          \"custom\": {\n            \"\
+    drawStyle\": \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\"\
+    : 10\n          },\n          \"thresholds\": {\n            \"mode\": \"absolute\"\
+    ,\n            \"steps\": [\n              {\n                \"color\": \"green\"\
+    ,\n                \"value\": null\n              },\n              {\n      \
+    \          \"color\": \"yellow\",\n                \"value\": 80\n           \
+    \   },\n              {\n                \"color\": \"red\",\n               \
+    \ \"value\": 95\n              }\n            ]\n          }\n        },\n   \
+    \     \"overrides\": []\n      },\n      \"options\": {\n        \"legend\": {\n\
+    \          \"displayMode\": \"list\",\n          \"placement\": \"bottom\"\n \
+    \       },\n        \"tooltip\": {\n          \"mode\": \"multi\"\n        }\n\
+    \      },\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"DCGM_FI_DEV_MEMORY_TEMP{cluster_id=~\\\"\
+    $cluster\\\"}\",\n          \"legendFormat\": \"Memory {{gpu}} ({{cluster_id}})\"\
+    ,\n          \"refId\": \"A\"\n        }\n      ]\n    },\n    {\n      \"id\"\
+    : 33,\n      \"type\": \"timeseries\",\n      \"title\": \"Power Consumption\"\
+    ,\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 8,\n        \"x\":\
+    \ 16,\n        \"y\": 24\n      },\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"watt\",\n   \
+    \       \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\"\
+    : 2,\n            \"fillOpacity\": 10\n          }\n        },\n        \"overrides\"\
+    : []\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\"\
+    : \"list\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\"\n        }\n      },\n      \"targets\": [\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"DCGM_FI_DEV_POWER_USAGE{cluster_id=~\\\"$cluster\\\"}\",\n          \"legendFormat\"\
+    : \"GPU {{gpu}} ({{cluster_id}})\",\n          \"refId\": \"A\"\n        }\n \
+    \     ]\n    },\n    {\n      \"id\": 40,\n      \"type\": \"row\",\n      \"\
+    title\": \"Clocks & Performance\",\n      \"gridPos\": {\n        \"h\": 1,\n\
+    \        \"w\": 24,\n        \"x\": 0,\n        \"y\": 32\n      }\n    },\n \
+    \   {\n      \"id\": 41,\n      \"type\": \"timeseries\",\n      \"title\": \"\
+    SM Clock Speed\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n\
+    \        \"x\": 0,\n        \"y\": 33\n      },\n      \"datasource\": {\n   \
+    \     \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n    \
+    \  },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\":\
+    \ \"hertz\",\n          \"custom\": {\n            \"drawStyle\": \"line\",\n\
+    \            \"lineWidth\": 2,\n            \"fillOpacity\": 10\n          }\n\
+    \        },\n        \"overrides\": []\n      },\n      \"options\": {\n     \
+    \   \"legend\": {\n          \"displayMode\": \"list\",\n          \"placement\"\
+    : \"bottom\"\n        },\n        \"tooltip\": {\n          \"mode\": \"multi\"\
+    \n        }\n      },\n      \"targets\": [\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"DCGM_FI_DEV_SM_CLOCK{cluster_id=~\\\"$cluster\\\
+    \"} * 1000000\",\n          \"legendFormat\": \"SM {{gpu}} ({{cluster_id}})\"\
+    ,\n          \"refId\": \"A\"\n        }\n      ]\n    },\n    {\n      \"id\"\
+    : 42,\n      \"type\": \"timeseries\",\n      \"title\": \"Memory Clock Speed\"\
+    ,\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\"\
+    : 12,\n        \"y\": 33\n      },\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"hertz\",\n  \
+    \        \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\"\
+    : 2,\n            \"fillOpacity\": 10\n          }\n        },\n        \"overrides\"\
+    : []\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\"\
+    : \"list\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\"\n        }\n      },\n      \"targets\": [\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"DCGM_FI_DEV_MEM_CLOCK{cluster_id=~\\\"$cluster\\\"} * 1000000\",\n       \
+    \   \"legendFormat\": \"Mem {{gpu}} ({{cluster_id}})\",\n          \"refId\":\
+    \ \"A\"\n        }\n      ]\n    },\n    {\n      \"id\": 50,\n      \"type\"\
+    : \"row\",\n      \"title\": \"Errors & Reliability\",\n      \"gridPos\": {\n\
+    \        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n        \"y\": 41\n\
+    \      }\n    },\n    {\n      \"id\": 51,\n      \"type\": \"timeseries\",\n\
+    \      \"title\": \"PCIe Replay Errors\",\n      \"gridPos\": {\n        \"h\"\
+    : 8,\n        \"w\": 8,\n        \"x\": 0,\n        \"y\": 42\n      },\n    \
+    \  \"datasource\": {\n        \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"custom\"\
+    : {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n   \
+    \         \"fillOpacity\": 10\n          }\n        },\n        \"overrides\"\
+    : []\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\"\
+    : \"list\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\"\n        }\n      },\n      \"targets\": [\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"rate(DCGM_FI_DEV_PCIE_REPLAY_COUNTER_total{cluster_id=~\\\"$cluster\\\"}[5m])\"\
+    ,\n          \"legendFormat\": \"GPU {{gpu}} ({{cluster_id}})\",\n          \"\
+    refId\": \"A\"\n        }\n      ]\n    },\n    {\n      \"id\": 52,\n      \"\
+    type\": \"timeseries\",\n      \"title\": \"XID Errors\",\n      \"gridPos\":\
+    \ {\n        \"h\": 8,\n        \"w\": 8,\n        \"x\": 8,\n        \"y\": 42\n\
+    \      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n      \
+    \  \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n      \
+    \  \"defaults\": {\n          \"custom\": {\n            \"drawStyle\": \"line\"\
+    ,\n            \"lineWidth\": 2,\n            \"fillOpacity\": 10\n          }\n\
+    \        },\n        \"overrides\": []\n      },\n      \"options\": {\n     \
+    \   \"legend\": {\n          \"displayMode\": \"list\",\n          \"placement\"\
+    : \"bottom\"\n        },\n        \"tooltip\": {\n          \"mode\": \"multi\"\
+    \n        }\n      },\n      \"targets\": [\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"DCGM_FI_DEV_XID_ERRORS{cluster_id=~\\\"\
+    $cluster\\\"}\",\n          \"legendFormat\": \"GPU {{gpu}} ({{cluster_id}})\"\
+    ,\n          \"refId\": \"A\"\n        }\n      ]\n    },\n    {\n      \"id\"\
+    : 53,\n      \"type\": \"timeseries\",\n      \"title\": \"Total Energy Consumed\"\
+    ,\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 8,\n        \"x\":\
+    \ 16,\n        \"y\": 42\n      },\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"joule\",\n  \
+    \        \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\"\
+    : 2,\n            \"fillOpacity\": 10\n          }\n        },\n        \"overrides\"\
+    : []\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\"\
+    : \"list\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\"\n        }\n      },\n      \"targets\": [\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"DCGM_FI_DEV_TOTAL_ENERGY_CONSUMPTION_total{cluster_id=~\\\"$cluster\\\"}\"\
+    ,\n          \"legendFormat\": \"GPU {{gpu}} ({{cluster_id}})\",\n          \"\
+    refId\": \"A\"\n        }\n      ]\n    }\n  ]\n}"
+  k8s-resources.json: "{\n  \"uid\": \"k8s-resources\",\n  \"title\": \"Kubernetes\
+    \ Resources\",\n  \"tags\": [\n    \"kubernetes\",\n    \"nodes\",\n    \"pods\"\
+    \n  ],\n  \"timezone\": \"browser\",\n  \"schemaVersion\": 39,\n  \"version\"\
+    : 1,\n  \"refresh\": \"30s\",\n  \"time\": {\n    \"from\": \"now-1h\",\n    \"\
+    to\": \"now\"\n  },\n  \"templating\": {\n    \"list\": [\n      {\n        \"\
+    name\": \"cluster\",\n        \"label\": \"Cluster\",\n        \"type\": \"query\"\
+    ,\n        \"datasource\": {\n          \"type\": \"prometheus\",\n          \"\
+    uid\": \"PBFA97CFB590B2093\"\n        },\n        \"query\": \"label_values(up{cluster_id!=\\\
+    \"\\\"}, cluster_id)\",\n        \"includeAll\": true,\n        \"allValue\":\
+    \ \".*\",\n        \"current\": {\n          \"selected\": true,\n          \"\
+    text\": \"All\",\n          \"value\": \"$__all\"\n        },\n        \"refresh\"\
+    : 2,\n        \"sort\": 1,\n        \"multi\": true\n      },\n      {\n     \
+    \   \"name\": \"namespace\",\n        \"label\": \"Namespace\",\n        \"type\"\
+    : \"query\",\n        \"datasource\": {\n          \"type\": \"prometheus\",\n\
+    \          \"uid\": \"PBFA97CFB590B2093\"\n        },\n        \"query\": \"label_values(kube_pod_info{cluster_id=~\\\
+    \"$cluster\\\"}, namespace)\",\n        \"includeAll\": true,\n        \"allValue\"\
+    : \".*\",\n        \"current\": {\n          \"selected\": true,\n          \"\
+    text\": \"All\",\n          \"value\": \"$__all\"\n        },\n        \"refresh\"\
+    : 2,\n        \"sort\": 1,\n        \"multi\": true\n      }\n    ]\n  },\n  \"\
+    panels\": [\n    {\n      \"id\": 1,\n      \"type\": \"row\",\n      \"title\"\
+    : \"Node Overview\",\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\":\
+    \ 24,\n        \"x\": 0,\n        \"y\": 0\n      }\n    },\n    {\n      \"id\"\
+    : 2,\n      \"type\": \"stat\",\n      \"title\": \"Nodes\",\n      \"gridPos\"\
+    : {\n        \"h\": 4,\n        \"w\": 3,\n        \"x\": 0,\n        \"y\": 1\n\
+    \      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n      \
+    \  \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n      \
+    \  \"defaults\": {\n          \"thresholds\": {\n            \"steps\": [\n  \
+    \            {\n                \"color\": \"green\",\n                \"value\"\
+    : null\n              }\n            ]\n          }\n        },\n        \"overrides\"\
+    : []\n      },\n      \"options\": {\n        \"reduceOptions\": {\n         \
+    \ \"calcs\": [\n            \"lastNotNull\"\n          ]\n        },\n       \
+    \ \"colorMode\": \"background\",\n        \"graphMode\": \"none\"\n      },\n\
+    \      \"targets\": [\n        {\n          \"datasource\": {\n            \"\
+    type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\n        \
+    \  },\n          \"expr\": \"count(k8s_node_cpu_utilization_ratio{cluster_id=~\\\
+    \"$cluster\\\"})\",\n          \"refId\": \"A\"\n        }\n      ]\n    },\n\
+    \    {\n      \"id\": 3,\n      \"type\": \"stat\",\n      \"title\": \"Pods Running\"\
+    ,\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 3,\n        \"x\":\
+    \ 3,\n        \"y\": 1\n      },\n      \"datasource\": {\n        \"type\": \"\
+    prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"thresholds\": {\n            \"steps\"\
+    : [\n              {\n                \"color\": \"green\",\n                \"\
+    value\": null\n              }\n            ]\n          }\n        },\n     \
+    \   \"overrides\": []\n      },\n      \"options\": {\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n      \
+    \  },\n        \"colorMode\": \"background\",\n        \"graphMode\": \"none\"\
+    \n      },\n      \"targets\": [\n        {\n          \"datasource\": {\n   \
+    \         \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"sum(kube_pod_status_phase{cluster_id=~\\\
+    \"$cluster\\\",phase=\\\"Running\\\"})\",\n          \"refId\": \"A\"\n      \
+    \  }\n      ]\n    },\n    {\n      \"id\": 4,\n      \"type\": \"stat\",\n  \
+    \    \"title\": \"Pods Not Ready\",\n      \"gridPos\": {\n        \"h\": 4,\n\
+    \        \"w\": 3,\n        \"x\": 6,\n        \"y\": 1\n      },\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"thresholds\"\
+    : {\n            \"steps\": [\n              {\n                \"color\": \"\
+    green\",\n                \"value\": null\n              },\n              {\n\
+    \                \"color\": \"red\",\n                \"value\": 1\n         \
+    \     }\n            ]\n          }\n        },\n        \"overrides\": []\n \
+    \     },\n      \"options\": {\n        \"reduceOptions\": {\n          \"calcs\"\
+    : [\n            \"lastNotNull\"\n          ]\n        },\n        \"colorMode\"\
+    : \"background\",\n        \"graphMode\": \"none\"\n      },\n      \"targets\"\
+    : [\n        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"sum(kube_pod_status_phase{cluster_id=~\\\"$cluster\\\",phase=~\\\"Pending|Failed|Unknown\\\
+    \"}) or vector(0)\",\n          \"refId\": \"A\"\n        }\n      ]\n    },\n\
+    \    {\n      \"id\": 5,\n      \"type\": \"stat\",\n      \"title\": \"Restarts\
+    \ (1h)\",\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 3,\n      \
+    \  \"x\": 9,\n        \"y\": 1\n      },\n      \"datasource\": {\n        \"\
+    type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n  \
+    \    \"fieldConfig\": {\n        \"defaults\": {\n          \"thresholds\": {\n\
+    \            \"steps\": [\n              {\n                \"color\": \"green\"\
+    ,\n                \"value\": null\n              },\n              {\n      \
+    \          \"color\": \"yellow\",\n                \"value\": 5\n            \
+    \  },\n              {\n                \"color\": \"red\",\n                \"\
+    value\": 20\n              }\n            ]\n          }\n        },\n       \
+    \ \"overrides\": []\n      },\n      \"options\": {\n        \"reduceOptions\"\
+    : {\n          \"calcs\": [\n            \"lastNotNull\"\n          ]\n      \
+    \  },\n        \"colorMode\": \"background\",\n        \"graphMode\": \"none\"\
+    \n      },\n      \"targets\": [\n        {\n          \"datasource\": {\n   \
+    \         \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"sum(increase(kube_pod_container_status_restarts_total{cluster_id=~\\\
+    \"$cluster\\\"}[1h])) or vector(0)\",\n          \"refId\": \"A\"\n        }\n\
+    \      ]\n    },\n    {\n      \"id\": 6,\n      \"type\": \"stat\",\n      \"\
+    title\": \"Deployments\",\n      \"gridPos\": {\n        \"h\": 4,\n        \"\
+    w\": 3,\n        \"x\": 12,\n        \"y\": 1\n      },\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"thresholds\"\
+    : {\n            \"steps\": [\n              {\n                \"color\": \"\
+    blue\",\n                \"value\": null\n              }\n            ]\n   \
+    \       }\n        },\n        \"overrides\": []\n      },\n      \"options\"\
+    : {\n        \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\
+    \n          ]\n        },\n        \"colorMode\": \"background\",\n        \"\
+    graphMode\": \"none\"\n      },\n      \"targets\": [\n        {\n          \"\
+    datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
+    PBFA97CFB590B2093\"\n          },\n          \"expr\": \"count(kube_deployment_created{cluster_id=~\\\
+    \"$cluster\\\"})\",\n          \"refId\": \"A\"\n        }\n      ]\n    },\n\
+    \    {\n      \"id\": 7,\n      \"type\": \"stat\",\n      \"title\": \"DaemonSets\"\
+    ,\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 3,\n        \"x\":\
+    \ 15,\n        \"y\": 1\n      },\n      \"datasource\": {\n        \"type\":\
+    \ \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"thresholds\": {\n     \
+    \       \"steps\": [\n              {\n                \"color\": \"blue\",\n\
+    \                \"value\": null\n              }\n            ]\n          }\n\
+    \        },\n        \"overrides\": []\n      },\n      \"options\": {\n     \
+    \   \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n\
+    \          ]\n        },\n        \"colorMode\": \"background\",\n        \"graphMode\"\
+    : \"none\"\n      },\n      \"targets\": [\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"count(kube_daemonset_created{cluster_id=~\\\
+    \"$cluster\\\"})\",\n          \"refId\": \"A\"\n        }\n      ]\n    },\n\
+    \    {\n      \"id\": 8,\n      \"type\": \"stat\",\n      \"title\": \"StatefulSets\"\
+    ,\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 3,\n        \"x\":\
+    \ 18,\n        \"y\": 1\n      },\n      \"datasource\": {\n        \"type\":\
+    \ \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"thresholds\": {\n     \
+    \       \"steps\": [\n              {\n                \"color\": \"blue\",\n\
+    \                \"value\": null\n              }\n            ]\n          }\n\
+    \        },\n        \"overrides\": []\n      },\n      \"options\": {\n     \
+    \   \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n\
+    \          ]\n        },\n        \"colorMode\": \"background\",\n        \"graphMode\"\
+    : \"none\"\n      },\n      \"targets\": [\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"count(kube_statefulset_created{cluster_id=~\\\
+    \"$cluster\\\"})\",\n          \"refId\": \"A\"\n        }\n      ]\n    },\n\
+    \    {\n      \"id\": 9,\n      \"type\": \"stat\",\n      \"title\": \"Namespaces\"\
+    ,\n      \"gridPos\": {\n        \"h\": 4,\n        \"w\": 3,\n        \"x\":\
+    \ 21,\n        \"y\": 1\n      },\n      \"datasource\": {\n        \"type\":\
+    \ \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"thresholds\": {\n     \
+    \       \"steps\": [\n              {\n                \"color\": \"blue\",\n\
+    \                \"value\": null\n              }\n            ]\n          }\n\
+    \        },\n        \"overrides\": []\n      },\n      \"options\": {\n     \
+    \   \"reduceOptions\": {\n          \"calcs\": [\n            \"lastNotNull\"\n\
+    \          ]\n        },\n        \"colorMode\": \"background\",\n        \"graphMode\"\
+    : \"none\"\n      },\n      \"targets\": [\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"count(kube_namespace_created{cluster_id=~\\\
+    \"$cluster\\\"})\",\n          \"refId\": \"A\"\n        }\n      ]\n    },\n\
+    \    {\n      \"id\": 10,\n      \"type\": \"row\",\n      \"title\": \"Node Resources\"\
+    ,\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\"\
+    : 0,\n        \"y\": 5\n      }\n    },\n    {\n      \"id\": 11,\n      \"type\"\
+    : \"timeseries\",\n      \"title\": \"Node CPU Utilization\",\n      \"gridPos\"\
+    : {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 0,\n        \"y\":\
+    \ 6\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n  \
+    \      \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n  \
+    \      \"defaults\": {\n          \"unit\": \"percentunit\",\n          \"max\"\
+    : 1,\n          \"min\": 0,\n          \"custom\": {\n            \"drawStyle\"\
+    : \"line\",\n            \"lineWidth\": 2,\n            \"fillOpacity\": 20\n\
+    \          }\n        },\n        \"overrides\": []\n      },\n      \"options\"\
+    : {\n        \"legend\": {\n          \"displayMode\": \"list\",\n          \"\
+    placement\": \"bottom\"\n        },\n        \"tooltip\": {\n          \"mode\"\
+    : \"multi\"\n        }\n      },\n      \"targets\": [\n        {\n          \"\
+    datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
+    PBFA97CFB590B2093\"\n          },\n          \"expr\": \"k8s_node_cpu_utilization_ratio{cluster_id=~\\\
+    \"$cluster\\\"}\",\n          \"legendFormat\": \"{{k8s_node_name}} ({{cluster_id}})\"\
+    ,\n          \"refId\": \"A\"\n        }\n      ]\n    },\n    {\n      \"id\"\
+    : 12,\n      \"type\": \"timeseries\",\n      \"title\": \"Node Memory Usage\"\
+    ,\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\"\
+    : 12,\n        \"y\": 6\n      },\n      \"datasource\": {\n        \"type\":\
+    \ \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"bytes\",\n  \
+    \        \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\"\
+    : 2,\n            \"fillOpacity\": 20\n          }\n        },\n        \"overrides\"\
+    : []\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\"\
+    : \"list\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\"\n        }\n      },\n      \"targets\": [\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"k8s_node_memory_working_set_bytes{cluster_id=~\\\"$cluster\\\"}\",\n     \
+    \     \"legendFormat\": \"Working Set {{k8s_node_name}} ({{cluster_id}})\",\n\
+    \          \"refId\": \"A\"\n        }\n      ]\n    },\n    {\n      \"id\":\
+    \ 13,\n      \"type\": \"timeseries\",\n      \"title\": \"Node Filesystem Usage\
+    \ %\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"\
+    x\": 0,\n        \"y\": 14\n      },\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"percentunit\"\
+    ,\n          \"max\": 1,\n          \"min\": 0,\n          \"custom\": {\n   \
+    \         \"drawStyle\": \"line\",\n            \"lineWidth\": 2,\n          \
+    \  \"fillOpacity\": 20\n          },\n          \"thresholds\": {\n          \
+    \  \"mode\": \"absolute\",\n            \"steps\": [\n              {\n      \
+    \          \"color\": \"green\",\n                \"value\": null\n          \
+    \    },\n              {\n                \"color\": \"yellow\",\n           \
+    \     \"value\": 0.8\n              },\n              {\n                \"color\"\
+    : \"red\",\n                \"value\": 0.9\n              }\n            ]\n \
+    \         }\n        },\n        \"overrides\": []\n      },\n      \"options\"\
+    : {\n        \"legend\": {\n          \"displayMode\": \"list\",\n          \"\
+    placement\": \"bottom\"\n        },\n        \"tooltip\": {\n          \"mode\"\
+    : \"multi\"\n        }\n      },\n      \"targets\": [\n        {\n          \"\
+    datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
+    PBFA97CFB590B2093\"\n          },\n          \"expr\": \"k8s_node_filesystem_usage_bytes{cluster_id=~\\\
+    \"$cluster\\\"} / k8s_node_filesystem_capacity_bytes{cluster_id=~\\\"$cluster\\\
+    \"}\",\n          \"legendFormat\": \"{{k8s_node_name}} ({{cluster_id}})\",\n\
+    \          \"refId\": \"A\"\n        }\n      ]\n    },\n    {\n      \"id\":\
+    \ 14,\n      \"type\": \"timeseries\",\n      \"title\": \"Node Network I/O\"\
+    ,\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\"\
+    : 12,\n        \"y\": 14\n      },\n      \"datasource\": {\n        \"type\"\
+    : \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"\
+    fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"Bps\",\n    \
+    \      \"custom\": {\n            \"drawStyle\": \"line\",\n            \"lineWidth\"\
+    : 2,\n            \"fillOpacity\": 10\n          }\n        },\n        \"overrides\"\
+    : []\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\"\
+    : \"list\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\"\n        }\n      },\n      \"targets\": [\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"rate(k8s_node_network_io_bytes_total{cluster_id=~\\\"$cluster\\\"}[5m])\"\
+    ,\n          \"legendFormat\": \"{{k8s_node_name}} {{direction}} ({{cluster_id}})\"\
+    ,\n          \"refId\": \"A\"\n        }\n      ]\n    },\n    {\n      \"id\"\
+    : 20,\n      \"type\": \"row\",\n      \"title\": \"Pod Resources\",\n      \"\
+    gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n        \"x\": 0,\n     \
+    \   \"y\": 22\n      }\n    },\n    {\n      \"id\": 21,\n      \"type\": \"timeseries\"\
+    ,\n      \"title\": \"Pod CPU Utilization (Top 15)\",\n      \"gridPos\": {\n\
+    \        \"h\": 8,\n        \"w\": 12,\n        \"x\": 0,\n        \"y\": 23\n\
+    \      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n      \
+    \  \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n      \
+    \  \"defaults\": {\n          \"unit\": \"percentunit\",\n          \"custom\"\
+    : {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 1,\n   \
+    \         \"fillOpacity\": 10\n          }\n        },\n        \"overrides\"\
+    : []\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\"\
+    : \"list\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\"\n        }\n      },\n      \"targets\": [\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"topk(15, k8s_pod_cpu_utilization_ratio{cluster_id=~\\\"$cluster\\\",k8s_namespace_name=~\\\
+    \"$namespace\\\"})\",\n          \"legendFormat\": \"{{k8s_pod_name}} ({{cluster_id}})\"\
+    ,\n          \"refId\": \"A\"\n        }\n      ]\n    },\n    {\n      \"id\"\
+    : 22,\n      \"type\": \"timeseries\",\n      \"title\": \"Pod Memory Usage (Top\
+    \ 15)\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n      \
+    \  \"x\": 12,\n        \"y\": 23\n      },\n      \"datasource\": {\n        \"\
+    type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n  \
+    \    \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\": \"bytes\"\
+    ,\n          \"custom\": {\n            \"drawStyle\": \"line\",\n           \
+    \ \"lineWidth\": 1,\n            \"fillOpacity\": 10\n          }\n        },\n\
+    \        \"overrides\": []\n      },\n      \"options\": {\n        \"legend\"\
+    : {\n          \"displayMode\": \"list\",\n          \"placement\": \"bottom\"\
+    \n        },\n        \"tooltip\": {\n          \"mode\": \"multi\"\n        }\n\
+    \      },\n      \"targets\": [\n        {\n          \"datasource\": {\n    \
+    \        \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"topk(15, k8s_pod_memory_working_set_bytes{cluster_id=~\\\
+    \"$cluster\\\",k8s_namespace_name=~\\\"$namespace\\\"})\",\n          \"legendFormat\"\
+    : \"{{k8s_pod_name}} ({{cluster_id}})\",\n          \"refId\": \"A\"\n       \
+    \ }\n      ]\n    },\n    {\n      \"id\": 30,\n      \"type\": \"row\",\n   \
+    \   \"title\": \"Container Details\",\n      \"gridPos\": {\n        \"h\": 1,\n\
+    \        \"w\": 24,\n        \"x\": 0,\n        \"y\": 31\n      }\n    },\n \
+    \   {\n      \"id\": 31,\n      \"type\": \"timeseries\",\n      \"title\": \"\
+    Container CPU (Top 15)\",\n      \"gridPos\": {\n        \"h\": 8,\n        \"\
+    w\": 12,\n        \"x\": 0,\n        \"y\": 32\n      },\n      \"datasource\"\
+    : {\n        \"type\": \"prometheus\",\n        \"uid\": \"PBFA97CFB590B2093\"\
+    \n      },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"unit\"\
+    : \"percentunit\",\n          \"custom\": {\n            \"drawStyle\": \"line\"\
+    ,\n            \"lineWidth\": 1,\n            \"fillOpacity\": 10\n          }\n\
+    \        },\n        \"overrides\": []\n      },\n      \"options\": {\n     \
+    \   \"legend\": {\n          \"displayMode\": \"list\",\n          \"placement\"\
+    : \"bottom\"\n        },\n        \"tooltip\": {\n          \"mode\": \"multi\"\
+    \n        }\n      },\n      \"targets\": [\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"topk(15, container_cpu_utilization_ratio{cluster_id=~\\\
+    \"$cluster\\\",k8s_namespace_name=~\\\"$namespace\\\"})\",\n          \"legendFormat\"\
+    : \"{{k8s_pod_name}}/{{container_name}} ({{cluster_id}})\",\n          \"refId\"\
+    : \"A\"\n        }\n      ]\n    },\n    {\n      \"id\": 32,\n      \"type\"\
+    : \"timeseries\",\n      \"title\": \"Container Memory (Top 15)\",\n      \"gridPos\"\
+    : {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n        \"y\"\
+    : 32\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\",\n \
+    \       \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n \
+    \       \"defaults\": {\n          \"unit\": \"bytes\",\n          \"custom\"\
+    : {\n            \"drawStyle\": \"line\",\n            \"lineWidth\": 1,\n   \
+    \         \"fillOpacity\": 10\n          }\n        },\n        \"overrides\"\
+    : []\n      },\n      \"options\": {\n        \"legend\": {\n          \"displayMode\"\
+    : \"list\",\n          \"placement\": \"bottom\"\n        },\n        \"tooltip\"\
+    : {\n          \"mode\": \"multi\"\n        }\n      },\n      \"targets\": [\n\
+    \        {\n          \"datasource\": {\n            \"type\": \"prometheus\"\
+    ,\n            \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\"\
+    : \"topk(15, container_memory_usage_bytes{cluster_id=~\\\"$cluster\\\",k8s_namespace_name=~\\\
+    \"$namespace\\\"})\",\n          \"legendFormat\": \"{{k8s_pod_name}}/{{container_name}}\
+    \ ({{cluster_id}})\",\n          \"refId\": \"A\"\n        }\n      ]\n    },\n\
+    \    {\n      \"id\": 40,\n      \"type\": \"row\",\n      \"title\": \"Workload\
+    \ Status\",\n      \"gridPos\": {\n        \"h\": 1,\n        \"w\": 24,\n   \
+    \     \"x\": 0,\n        \"y\": 40\n      }\n    },\n    {\n      \"id\": 41,\n\
+    \      \"type\": \"table\",\n      \"title\": \"Deployment Status\",\n      \"\
+    gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 0,\n     \
+    \   \"y\": 41\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"options\": {\n  \
+    \      \"showHeader\": true\n      },\n      \"targets\": [\n        {\n     \
+    \     \"datasource\": {\n            \"type\": \"prometheus\",\n            \"\
+    uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\": \"kube_deployment_status_replicas{cluster_id=~\\\
+    \"$cluster\\\",namespace=~\\\"$namespace\\\"}\",\n          \"format\": \"table\"\
+    ,\n          \"instant\": true,\n          \"refId\": \"A\"\n        },\n    \
+    \    {\n          \"datasource\": {\n            \"type\": \"prometheus\",\n \
+    \           \"uid\": \"PBFA97CFB590B2093\"\n          },\n          \"expr\":\
+    \ \"kube_deployment_status_replicas_available{cluster_id=~\\\"$cluster\\\",namespace=~\\\
+    \"$namespace\\\"}\",\n          \"format\": \"table\",\n          \"instant\"\
+    : true,\n          \"refId\": \"B\"\n        },\n        {\n          \"datasource\"\
+    : {\n            \"type\": \"prometheus\",\n            \"uid\": \"PBFA97CFB590B2093\"\
+    \n          },\n          \"expr\": \"kube_deployment_status_replicas_unavailable{cluster_id=~\\\
+    \"$cluster\\\",namespace=~\\\"$namespace\\\"}\",\n          \"format\": \"table\"\
+    ,\n          \"instant\": true,\n          \"refId\": \"C\"\n        }\n     \
+    \ ],\n      \"transformations\": [\n        {\n          \"id\": \"merge\",\n\
+    \          \"options\": {}\n        },\n        {\n          \"id\": \"filterFieldsByName\"\
+    ,\n          \"options\": {\n            \"include\": {\n              \"names\"\
+    : [\n                \"cluster_id\",\n                \"namespace\",\n       \
+    \         \"deployment\",\n                \"Value #A\",\n                \"Value\
+    \ #B\",\n                \"Value #C\"\n              ]\n            }\n      \
+    \    }\n        },\n        {\n          \"id\": \"organize\",\n          \"options\"\
+    : {\n            \"renameByName\": {\n              \"cluster_id\": \"Cluster\"\
+    ,\n              \"namespace\": \"Namespace\",\n              \"deployment\":\
+    \ \"Deployment\",\n              \"Value #A\": \"Desired\",\n              \"\
+    Value #B\": \"Available\",\n              \"Value #C\": \"Unavailable\"\n    \
+    \        }\n          }\n        }\n      ]\n    },\n    {\n      \"id\": 42,\n\
+    \      \"type\": \"timeseries\",\n      \"title\": \"Container Restarts\",\n \
+    \     \"gridPos\": {\n        \"h\": 8,\n        \"w\": 12,\n        \"x\": 12,\n\
+    \        \"y\": 41\n      },\n      \"datasource\": {\n        \"type\": \"prometheus\"\
+    ,\n        \"uid\": \"PBFA97CFB590B2093\"\n      },\n      \"fieldConfig\": {\n\
+    \        \"defaults\": {\n          \"custom\": {\n            \"drawStyle\":\
+    \ \"bars\",\n            \"lineWidth\": 1,\n            \"fillOpacity\": 80\n\
+    \          }\n        },\n        \"overrides\": []\n      },\n      \"options\"\
+    : {\n        \"legend\": {\n          \"displayMode\": \"list\",\n          \"\
+    placement\": \"bottom\"\n        },\n        \"tooltip\": {\n          \"mode\"\
+    : \"multi\"\n        }\n      },\n      \"targets\": [\n        {\n          \"\
+    datasource\": {\n            \"type\": \"prometheus\",\n            \"uid\": \"\
+    PBFA97CFB590B2093\"\n          },\n          \"expr\": \"increase(kube_pod_container_status_restarts_total{cluster_id=~\\\
+    \"$cluster\\\",namespace=~\\\"$namespace\\\"}[5m]) > 0\",\n          \"legendFormat\"\
+    : \"{{pod}} ({{cluster_id}})\",\n          \"refId\": \"A\"\n        }\n     \
+    \ ]\n    }\n  ]\n}"
 kind: ConfigMap
 metadata:
   name: grafana-dashboards
   namespace: monitoring
-data:
-  overview.json: |
-    {"annotations":{"list":[]},"editable":true,"fiscalYearStartMonth":0,"graphTooltip":0,"id":null,"links":[],"liveNow":false,"panels":[{"datasource":{"type":"prometheus","uid":"${datasource}"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":70},{"color":"red","value":90}]},"unit":"percent"}},"gridPos":{"h":6,"w":6,"x":0,"y":0},"id":1,"options":{"orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showThresholdLabels":false,"showThresholdMarkers":true},"pluginVersion":"10.3.1","targets":[{"expr":"100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)","legendFormat":"CPU Usage","refId":"A"}],"title":"Cluster CPU Usage","type":"gauge"},{"datasource":{"type":"prometheus","uid":"${datasource}"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":70},{"color":"red","value":90}]},"unit":"percent"}},"gridPos":{"h":6,"w":6,"x":6,"y":0},"id":2,"options":{"orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showThresholdLabels":false,"showThresholdMarkers":true},"pluginVersion":"10.3.1","targets":[{"expr":"(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100","legendFormat":"Memory Usage","refId":"A"}],"title":"Cluster Memory Usage","type":"gauge"},{"datasource":{"type":"prometheus","uid":"${datasource}"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]}}},"gridPos":{"h":6,"w":6,"x":12,"y":0},"id":3,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto"},"pluginVersion":"10.3.1","targets":[{"expr":"count(kube_pod_info)","legendFormat":"Running Pods","refId":"A"}],"title":"Running Pods","type":"stat"},{"datasource":{"type":"prometheus","uid":"${datasource}"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]}}},"gridPos":{"h":6,"w":6,"x":18,"y":0},"id":4,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"textMode":"auto"},"pluginVersion":"10.3.1","targets":[{"expr":"sum(up)","legendFormat":"Healthy Services","refId":"A"}],"title":"Services Up","type":"stat"}],"refresh":"30s","schemaVersion":39,"tags":["observability","overview"],"templating":{"list":[{"current":{"selected":false,"text":"Prometheus","value":"prometheus"},"hide":0,"includeAll":false,"label":"Datasource","multi":false,"name":"datasource","options":[],"query":"prometheus","queryValue":"","refresh":1,"regex":"","skipUrlSync":false,"type":"datasource"}]},"time":{"from":"now-1h","to":"now"},"timepicker":{},"timezone":"","title":"Observability Overview","uid":"observability-overview","version":1,"weekStart":""}

@@ -5,5 +5,10 @@ namespace: observability
 
 resources:
   - namespace.yaml
+  - agent/rbac.yaml
   - agent/config.yaml
   - agent/daemonset.yaml
+  - scraper/rbac.yaml
+  - scraper/config.yaml
+  - scraper/deployment.yaml
+  - kube-state-metrics.yaml

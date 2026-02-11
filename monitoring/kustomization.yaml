@@ -13,5 +13,7 @@ resources:
   - tempo/config.yaml
   - tempo/statefulset.yaml
   - grafana/config.yaml
+  - grafana/dashboard-providers.yaml
   - grafana/dashboards-configmap.yaml
   - grafana/deployment.yaml
+  - dcgm-exporter.yaml

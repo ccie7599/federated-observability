@@ -19,20 +19,20 @@ data:
     \        - tag_name: component\n          key: app.kubernetes.io/component\n\n\
     \  resourcedetection:\n    detectors: [env, system]\n    timeout: 5s\n    override:\
     \ false\n\n  resource:\n    attributes:\n      - key: cluster.id\n        value:\
-    \ fed-observability-test\n        action: insert\n      - key: cluster.role\n\
-    \        value: hub\n        action: insert\n\n  memory_limiter:\n    check_interval:\
+    \ fed-observability-remote\n        action: insert\n      - key: cluster.role\n\
+    \        value: edge\n        action: insert\n\n  memory_limiter:\n    check_interval:\
     \ 1s\n    limit_mib: 400\n    spike_limit_mib: 100\n\n  batch:\n    send_batch_size:\
-    \ 1000\n    send_batch_max_size: 1500\n    timeout: 10s\n\nexporters:\n  otlp/gateway:\n\
-    \    endpoint: otel-gateway.observability-hub.svc.cluster.local:4317\n    tls:\n\
-    \      insecure: true\n\nextensions:\n  health_check:\n    endpoint: 0.0.0.0:13133\n\
-    \nservice:\n  extensions: [health_check]\n  telemetry:\n    metrics:\n      address:\
-    \ 0.0.0.0:8888\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors:\
-    \ [memory_limiter, k8sattributes, resourcedetection, resource, batch]\n      exporters:\
-    \ [otlp/gateway]\n    metrics:\n      receivers: [otlp, kubeletstats]\n      processors:\
-    \ [memory_limiter, k8sattributes, resourcedetection, resource, batch]\n      exporters:\
-    \ [otlp/gateway]\n    logs:\n      receivers: [otlp, filelog]\n      processors:\
-    \ [memory_limiter, k8sattributes, resourcedetection, resource, batch]\n      exporters:\
-    \ [otlp/gateway]\n"
+    \ 1000\n    send_batch_max_size: 1500\n    timeout: 10s\n\nexporters:\n  otlp/hub:\n\
+    \    endpoint: 172.238.181.107:4317\n    tls:\n      insecure: true\n    retry_on_failure:\n\
+    \      enabled: true\n      initial_interval: 5s\n      max_interval: 60s\n\n\
+    extensions:\n  health_check:\n    endpoint: 0.0.0.0:13133\n\nservice:\n  extensions:\
+    \ [health_check]\n  telemetry:\n    metrics:\n      address: 0.0.0.0:8888\n  pipelines:\n\
+    \    traces:\n      receivers: [otlp]\n      processors: [memory_limiter, k8sattributes,\
+    \ resourcedetection, resource, batch]\n      exporters: [otlp/hub]\n    metrics:\n\
+    \      receivers: [otlp, kubeletstats]\n      processors: [memory_limiter, k8sattributes,\
+    \ resourcedetection, resource, batch]\n      exporters: [otlp/hub]\n    logs:\n\
+    \      receivers: [otlp, filelog]\n      processors: [memory_limiter, k8sattributes,\
+    \ resourcedetection, resource, batch]\n      exporters: [otlp/hub]\n"
 kind: ConfigMap
 metadata:
   name: otel-agent-config
