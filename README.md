@@ -100,7 +100,7 @@ With no application changes, every cluster reports:
 │   └── vault/                   # HashiCorp Vault HA cluster
 │
 ├── terraform/                   # LKE cluster provisioning
-├── docs/                        # Deployment guide, architecture, security, runbooks
+├── docs/                        # Deployment guide, architecture, security
 ├── scripts/                     # Cert generation, load testing, validation
 ├── policies/                    # Kyverno policies (mTLS, PII, resource limits)
 └── tests/                       # Smoke tests and config validation
@@ -175,4 +175,3 @@ Four dashboards are provisioned automatically:
 - [Architecture](docs/architecture.md) — Design principles and data flow
 - [Security](docs/security.md) — mTLS, PII scrubbing, network policies
 - [ADRs](docs/adr/) — Architecture decision records
-- [Runbooks](docs/runbooks/) — Incident response procedures
