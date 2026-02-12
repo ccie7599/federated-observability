@@ -270,7 +270,7 @@ echo "Gateway IP: $GATEWAY_IP"
 
 ### 3.5 Deploy Vault (Hub)
 
-HashiCorp Vault stores mTLS certificates and other secrets. Deploy a 3-pod HA cluster using Raft consensus:
+HashiCorp Vault stores mTLS certificates, destination API keys, and other secrets. Deploy a 3-pod HA cluster using Raft consensus:
 
 ```bash
 kubectl --context $HUB_CTX apply -k examples/vault/
@@ -282,39 +282,68 @@ Wait for pods to start (they'll be in `0/1 Running` — not yet initialized):
 kubectl --context $HUB_CTX get pods -n vault -w
 ```
 
-Initialize Vault (only once, on vault-0):
+#### Automated Setup
+
+The setup script handles initialization, unsealing, KV mount creation, Kubernetes auth, policies, and VSO role configuration:
 
 ```bash
-kubectl --context $HUB_CTX exec -n vault vault-0 -- vault operator init \
-  -key-shares=5 -key-threshold=3
+./examples/vault/vault-setup.sh
 ```
 
-**Save the unseal keys and root token securely.** You need 3 of 5 keys to unseal.
+This script performs the following:
+1. Initializes vault-0 with 5 key shares, threshold 3 (saves keys to `vault-keys.json`)
+2. Unseals all three pods
+3. Joins vault-1 and vault-2 to the Raft cluster
+4. Enables Kubernetes auth method
+5. Creates the `observability` KV-v2 secrets engine
+6. Creates placeholder secrets for destinations (Splunk HEC token, Datadog API key, customer OTLP endpoint)
+7. Creates the `observability-read` policy and `observability` K8s auth role (for OTel workloads)
+8. Creates the `vso-read` policy and `vso` K8s auth role (for the Vault Secrets Operator)
+9. Enables audit logging to `/vault/logs/audit.log`
 
-Unseal all three pods (repeat with 3 different keys for each pod):
+**Save `vault-keys.json` securely** — it contains the unseal keys and root token.
+
+#### Manual Setup
+
+If you prefer to run steps individually:
 
 ```bash
+# Initialize (only once, on vault-0)
+kubectl --context $HUB_CTX exec -n vault vault-0 -- vault operator init \
+  -key-shares=5 -key-threshold=3
+
+# Unseal all three pods (repeat with 3 different keys for each pod)
 for POD in vault-0 vault-1 vault-2; do
   kubectl --context $HUB_CTX exec -n vault $POD -- vault operator unseal <KEY_1>
   kubectl --context $HUB_CTX exec -n vault $POD -- vault operator unseal <KEY_2>
   kubectl --context $HUB_CTX exec -n vault $POD -- vault operator unseal <KEY_3>
 done
-```
 
-Join vault-1 and vault-2 to the Raft cluster:
-
-```bash
+# Join vault-1 and vault-2 to the Raft cluster
 for POD in vault-1 vault-2; do
   kubectl --context $HUB_CTX exec -n vault $POD -- vault operator raft join http://vault-0.vault-internal:8200
 done
-```
 
-Enable the KV v2 secrets engine:
-
-```bash
+# Enable the KV v2 secrets engine
 kubectl --context $HUB_CTX exec -n vault vault-0 -- sh -c \
   'export VAULT_TOKEN=<ROOT_TOKEN> && vault secrets enable -version=2 -path=observability kv'
 ```
+
+#### Vault Policies and Roles
+
+The setup script creates two policies:
+
+| Policy | Path | Capabilities | Used By |
+|--------|------|-------------|---------|
+| `observability-read` | `observability/*` | read, list | OTel agents and routers |
+| `vso-read` | `observability/data/*`, `observability/metadata/*` | read (data), read + list (metadata) | Vault Secrets Operator |
+
+And two Kubernetes auth roles:
+
+| Role | Bound Service Accounts | Bound Namespaces | Policy |
+|------|----------------------|-------------------|--------|
+| `observability` | `otel-agent`, `otel-router` | `observability` | `observability-read` |
+| `vso` | `vault-secrets-operator-controller-manager`, `vso-auth` | `vault-secrets-operator-system`, `observability`, `observability-hub`, `monitoring` | `vso-read` |
 
 ### 3.6 Set Up DNS (Akamai Edge DNS)
 
@@ -428,30 +457,52 @@ helm install vault-secrets-operator hashicorp/vault-secrets-operator \
   -n vault-secrets-operator-system --create-namespace --context $HUB_CTX
 ```
 
-Update the Vault K8s auth role to include the VSO service account:
+> **Note:** If you used `vault-setup.sh` in Section 3.5, the VSO Vault policy and role are already created. If setting up manually, create them now:
+>
+> ```bash
+> kubectl --context $HUB_CTX exec -n vault vault-0 -- vault write auth/kubernetes/role/vso \
+>   bound_service_account_names=vault-secrets-operator-controller-manager,vso-auth \
+>   bound_service_account_namespaces=vault-secrets-operator-system,observability,observability-hub,monitoring \
+>   policies=vso-read ttl=1h
+> ```
 
-```bash
-kubectl --context $HUB_CTX exec -n vault vault-0 -- vault write auth/kubernetes/role/vso \
-  bound_service_account_names=vault-secrets-operator-controller-manager,vso-auth \
-  bound_service_account_namespaces=vault-secrets-operator-system,observability-hub \
-  policies=vso-read ttl=1h
-```
+The hub cluster has three VSO installations — one per target namespace. Each has its own VaultConnection, VaultAuth, and VaultStaticSecret because VSO does not support cross-namespace references.
 
-Apply VSO CRDs (VaultConnection, VaultAuth, VaultStaticSecret):
+**1. Gateway namespace** (`observability-hub`) — syncs the CA cert for mTLS client validation:
 
 ```bash
 kubectl --context $HUB_CTX apply -k hub/vault-secrets-operator/
 ```
 
-Verify the `client-ca` secret syncs from Vault:
+This creates a `client-ca` K8s secret from Vault path `observability/mtls-ca` and restarts the gateway Deployment when the CA rotates.
+
+**2. Observability namespace** (`observability`) — syncs client TLS certs for hub agents/scrapers:
 
 ```bash
-kubectl --context $HUB_CTX get vaultstaticsecret -n observability-hub
-# NAME        AGE
-# client-ca   30s   (status should show SecretSynced=True)
+kubectl --context $HUB_CTX apply -k hub/observability/vault-secrets-operator/
 ```
 
-> **Note:** The `client-ca` K8s secret is now managed by VSO, not created manually. The gateway deployment mounts it unchanged — VSO's transformation templates map Vault KV keys (`ca_crt`) to the expected K8s secret keys (`ca.crt`).
+This creates an `otel-client-tls` K8s secret from Vault path `observability/edge-certs/fed-observability-remote` and restarts the agent DaemonSet and scraper Deployment when certs rotate.
+
+**3. Monitoring namespace** (`monitoring`) — syncs Grafana's Let's Encrypt TLS cert:
+
+```bash
+kubectl --context $HUB_CTX apply -k hub/monitoring/vault-secrets-operator/
+```
+
+This creates a `grafana-tls` K8s secret (type `kubernetes.io/tls`) from Vault path `observability/grafana-tls` and restarts the Grafana Deployment when the cert renews.
+
+Verify all secrets sync from Vault:
+
+```bash
+kubectl --context $HUB_CTX get vaultstaticsecret -A
+# NAMESPACE          NAME              AGE
+# monitoring         grafana-tls       30s
+# observability      hub-client-tls    30s
+# observability-hub  client-ca         30s
+```
+
+> **How VSO manages secrets:** Each VaultStaticSecret polls Vault every 60 seconds. When a cert rotates (cert-manager renews → sync script updates Vault → VSO detects change), VSO updates the K8s secret and triggers `rolloutRestartTargets` to restart affected workloads. Transformation templates remap Vault keys (`ca_crt`, `tls_crt`, `tls_key`) to Kubernetes-standard keys (`ca.crt`, `tls.crt`, `tls.key`). See [`docs/security.md`](security.md) for full details.
 
 #### Apply Gateway with mTLS
 
@@ -526,6 +577,16 @@ linode-cli firewalls create \
 kubectl --context $HUB_CTX get pods -n monitoring
 kubectl --context $HUB_CTX get pods -n observability
 kubectl --context $HUB_CTX get pods -n observability-hub
+kubectl --context $HUB_CTX get pods -n vault
+kubectl --context $HUB_CTX get pods -n vault-secrets-operator-system
+
+# VSO secrets should all be synced
+kubectl --context $HUB_CTX get vaultstaticsecret -A
+
+# Verify VSO-managed secrets exist
+kubectl --context $HUB_CTX get secret client-ca -n observability-hub
+kubectl --context $HUB_CTX get secret otel-client-tls -n observability
+kubectl --context $HUB_CTX get secret grafana-tls -n monitoring
 
 # Gateway health check
 kubectl --context $HUB_CTX port-forward svc/otel-gateway -n observability-hub 13133:13133 &
@@ -536,6 +597,9 @@ kill %1
 kubectl --context $HUB_CTX port-forward svc/prometheus -n monitoring 9090:9090 &
 curl -s 'http://localhost:9090/api/v1/query?query=up' | python3 -m json.tool | head -20
 kill %1
+
+# Verify Vault is unsealed and healthy
+kubectl --context $HUB_CTX exec -n vault vault-0 -- vault status
 ```
 
 ---
@@ -589,6 +653,8 @@ kubectl --context $EDGE_CTX apply -k examples/vault/
 
 Initialize and unseal the edge Vault (same process as hub — see Section 3.5). Then enable the KV v2 engine and K8s auth:
 
+> **Note:** The edge Vault uses the `secret` KV mount path (not `observability` like the hub). This separates hub and edge secret namespaces and prevents accidental overwrites.
+
 ```bash
 kubectl --context $EDGE_CTX exec -n vault vault-0 -- sh -c \
   'export VAULT_TOKEN=<EDGE_ROOT_TOKEN> && vault secrets enable -version=2 -path=secret kv'
@@ -618,6 +684,10 @@ kubectl --context $EDGE_CTX exec -n vault vault-0 -- sh -c 'export VAULT_TOKEN=<
     bound_service_account_names=vault-secrets-operator-controller-manager,vso-auth \
     bound_service_account_namespaces=vault-secrets-operator-system,observability \
     policies=vso-read ttl=1h'
+
+# Enable audit logging on edge Vault
+kubectl --context $EDGE_CTX exec -n vault vault-0 -- sh -c 'export VAULT_TOKEN=<EDGE_ROOT_TOKEN> && \
+  vault audit enable file file_path=/vault/logs/audit.log'
 ```
 
 Get the edge nginx ingress IP for DNS:
@@ -986,9 +1056,14 @@ The OTel gateway can fan out telemetry to external platforms by adding exporters
 
 ### 6.1 Adding Splunk HEC (Logs)
 
-Create a secret and add the exporter:
+Store the HEC token in Vault and create the K8s secret. The `vault-setup.sh` script creates a placeholder at `observability/splunk-hec` — update it with the real token:
 
 ```bash
+# Store real token in Vault
+kubectl --context $HUB_CTX exec -n vault vault-0 -- vault kv put observability/splunk-hec \
+  token=YOUR_SPLUNK_HEC_TOKEN
+
+# Create K8s secret (or use a VaultStaticSecret to sync automatically)
 kubectl --context $HUB_CTX create secret generic splunk-hec-token \
   -n observability-hub \
   --from-literal=token=YOUR_SPLUNK_HEC_TOKEN
@@ -1029,7 +1104,14 @@ Add the `SPLUNK_HEC_TOKEN` env var to the gateway Deployment from the secret.
 
 ### 6.2 Adding Datadog (Metrics + Traces)
 
+Store the API key in Vault and create the K8s secret:
+
 ```bash
+# Store real API key in Vault
+kubectl --context $HUB_CTX exec -n vault vault-0 -- vault kv put observability/datadog \
+  api_key=YOUR_DD_API_KEY
+
+# Create K8s secret (or use a VaultStaticSecret to sync automatically)
 kubectl --context $HUB_CTX create secret generic datadog-api-key \
   -n observability-hub \
   --from-literal=api-key=YOUR_DD_API_KEY
