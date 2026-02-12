@@ -16,4 +16,5 @@ resources:
   - grafana/dashboard-providers.yaml
   - grafana/dashboards-configmap.yaml
   - grafana/deployment.yaml
+  - grafana/ingress.yaml
   - dcgm-exporter.yaml

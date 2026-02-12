@@ -266,7 +266,7 @@ POLICY
 kubectl exec -n $NAMESPACE $VAULT_POD -- env VAULT_TOKEN=$VAULT_TOKEN \
     vault write auth/kubernetes/role/vso \
     bound_service_account_names=vault-secrets-operator-controller-manager,vso-auth \
-    bound_service_account_namespaces=vault-secrets-operator-system,observability,observability-hub \
+    bound_service_account_namespaces=vault-secrets-operator-system,observability,observability-hub,monitoring \
     policies=vso-read \
     ttl=1h
 

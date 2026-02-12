@@ -1,0 +1,23 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vso-restart-workloads
+  namespace: monitoring
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vso-restart-workloads
+  namespace: monitoring
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: vso-restart-workloads
+subjects:
+  - kind: ServiceAccount
+    name: vault-secrets-operator-controller-manager
+    namespace: vault-secrets-operator-system

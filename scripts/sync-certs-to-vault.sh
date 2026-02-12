@@ -116,6 +116,18 @@ if $SYNC_HUB; then
         "tls_key=${CLIENT_KEY}" \
         "ca_crt=${CA_CERT}"
 
+    # Grafana TLS cert (Let's Encrypt, synced via VSO to monitoring namespace)
+    GRAFANA_CERT=$(extract_secret_key "$HUB_CONTEXT" "monitoring" "obs-connected-cloud-tls" "tls.crt" 2>/dev/null || true)
+    GRAFANA_KEY=$(extract_secret_key "$HUB_CONTEXT" "monitoring" "obs-connected-cloud-tls" "tls.key" 2>/dev/null || true)
+    if [ -n "$GRAFANA_CERT" ]; then
+        echo "   Writing observability/grafana-tls..."
+        vault_kv_put "$HUB_CONTEXT" "observability" "grafana-tls" \
+            "tls_crt=${GRAFANA_CERT}" \
+            "tls_key=${GRAFANA_KEY}"
+    else
+        echo "   Skipping Grafana TLS (obs-connected-cloud-tls not found in monitoring namespace)"
+    fi
+
     echo "   Hub Vault sync complete."
 fi
 

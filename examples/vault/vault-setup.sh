@@ -128,13 +128,13 @@ EOF'
 
 kubectl exec -n vault vault-0 -- vault write auth/kubernetes/role/vso \
     bound_service_account_names=vault-secrets-operator-controller-manager,vso-auth \
-    bound_service_account_namespaces=vault-secrets-operator-system,observability,observability-hub \
+    bound_service_account_namespaces=vault-secrets-operator-system,observability,observability-hub,monitoring \
     policies=vso-read \
     ttl=1h
 
 echo "   VSO policy and role created."
 echo "   Bound SAs: vault-secrets-operator-controller-manager, vso-auth"
-echo "   Bound namespaces: vault-secrets-operator-system, observability, observability-hub"
+echo "   Bound namespaces: vault-secrets-operator-system, observability, observability-hub, monitoring"
 
 # Enable audit logging
 echo ""

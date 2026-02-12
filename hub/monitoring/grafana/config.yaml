@@ -7,7 +7,7 @@ metadata:
 data:
   grafana.ini: |
     [server]
-    root_url = %(protocol)s://%(domain)s:%(http_port)s/
+    root_url = https://obs.connected-cloud.io/
 
     [security]
     admin_user = admin
