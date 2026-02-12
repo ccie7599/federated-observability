@@ -130,21 +130,6 @@ kubectl --context <edge-ctx> apply -f edge/agent-config.yaml
 kubectl --context <edge-ctx> apply -f edge/scraper-config.yaml
 ```
 
-## Live Clusters
-
-| Role | Cluster | Region | Context | Nodes |
-|------|---------|--------|---------|-------|
-| Hub | fed-observability-test | us-ord | `lke564853-ctx` | 3x g6-standard-4 + 1x GPU |
-| Edge | fed-observability-remote | us-ord | `lke566951-ctx` | 2x g6-standard-2 + 1x GPU |
-
-| Service | Endpoint |
-|---------|----------|
-| Grafana | `172.238.178.21` (port 80) |
-| OTel Gateway | `172.238.181.107` (ports 4317, 4318) |
-| BERT Inference (hub) | `172.234.208.68` (port 80) |
-| BERT Inference (edge) | `172.238.178.182` (port 80) |
-| Vault | `172.236.105.15` (port 8200) |
-
 ## Grafana Dashboards
 
 Four dashboards are provisioned automatically:
