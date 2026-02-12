@@ -12,3 +12,4 @@ resources:
   - scraper/config.yaml
   - scraper/deployment.yaml
   - kube-state-metrics.yaml
+  - vault-secrets-operator/

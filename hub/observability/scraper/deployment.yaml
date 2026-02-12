@@ -64,6 +64,9 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /etc/otel
+            - name: mtls-certs
+              mountPath: /certs
+              readOnly: true
           resources:
             requests:
               memory: "256Mi"
@@ -87,3 +90,6 @@ spec:
         - name: config
           configMap:
             name: otel-scraper-config
+        - name: mtls-certs
+          secret:
+            secretName: otel-client-tls

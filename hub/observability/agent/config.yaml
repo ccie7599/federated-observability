@@ -1,39 +1,117 @@
 apiVersion: v1
-data:
-  config.yaml: "receivers:\n  otlp:\n    protocols:\n      grpc:\n        endpoint:\
-    \ 0.0.0.0:4317\n      http:\n        endpoint: 0.0.0.0:4318\n\n  kubeletstats:\n\
-    \    collection_interval: 30s\n    auth_type: serviceAccount\n    endpoint: \"\
-    https://${env:K8S_NODE_IP}:10250\"\n    insecure_skip_verify: true\n    metric_groups:\n\
-    \      - node\n      - pod\n      - container\n\n  filelog:\n    include:\n  \
-    \    - /var/log/pods/*/*/*.log\n    exclude:\n      - /var/log/pods/*/otel-agent/*.log\n\
-    \    operators:\n      - type: router\n        routes:\n          - expr: 'body\
-    \ matches \"^\\\\{\"'\n            output: json_parser\n          - expr: 'true'\n\
-    \            output: regex_parser\n      - id: json_parser\n        type: json_parser\n\
-    \        timestamp:\n          parse_from: attributes.time\n          layout:\
-    \ '%Y-%m-%dT%H:%M:%S.%LZ'\n      - id: regex_parser\n        type: regex_parser\n\
-    \        regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<flags>[^ ]*) (?P<log>.*)$'\n\
-    \nprocessors:\n  k8sattributes:\n    auth_type: serviceAccount\n    passthrough:\
-    \ false\n    extract:\n      metadata:\n        - k8s.pod.name\n        - k8s.pod.uid\n\
-    \        - k8s.namespace.name\n        - k8s.node.name\n        - k8s.deployment.name\n\
-    \      labels:\n        - tag_name: app\n          key: app.kubernetes.io/name\n\
-    \        - tag_name: component\n          key: app.kubernetes.io/component\n\n\
-    \  resourcedetection:\n    detectors: [env, system]\n    timeout: 5s\n    override:\
-    \ false\n\n  resource:\n    attributes:\n      - key: cluster.id\n        value:\
-    \ fed-observability-test\n        action: insert\n      - key: cluster.role\n\
-    \        value: hub\n        action: insert\n\n  memory_limiter:\n    check_interval:\
-    \ 1s\n    limit_mib: 400\n    spike_limit_mib: 100\n\n  batch:\n    send_batch_size:\
-    \ 1000\n    send_batch_max_size: 1500\n    timeout: 10s\n\nexporters:\n  otlp/gateway:\n\
-    \    endpoint: otel-gateway.observability-hub.svc.cluster.local:4317\n    tls:\n\
-    \      insecure: true\n\nextensions:\n  health_check:\n    endpoint: 0.0.0.0:13133\n\
-    \nservice:\n  extensions: [health_check]\n  telemetry:\n    metrics:\n      address:\
-    \ 0.0.0.0:8888\n  pipelines:\n    traces:\n      receivers: [otlp]\n      processors:\
-    \ [memory_limiter, k8sattributes, resourcedetection, resource, batch]\n      exporters:\
-    \ [otlp/gateway]\n    metrics:\n      receivers: [otlp, kubeletstats]\n      processors:\
-    \ [memory_limiter, k8sattributes, resourcedetection, resource, batch]\n      exporters:\
-    \ [otlp/gateway]\n    logs:\n      receivers: [otlp, filelog]\n      processors:\
-    \ [memory_limiter, k8sattributes, resourcedetection, resource, batch]\n      exporters:\
-    \ [otlp/gateway]\n"
 kind: ConfigMap
 metadata:
   name: otel-agent-config
   namespace: observability
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+
+      kubeletstats:
+        collection_interval: 30s
+        auth_type: serviceAccount
+        endpoint: "https://${env:K8S_NODE_IP}:10250"
+        insecure_skip_verify: true
+        metric_groups:
+          - node
+          - pod
+          - container
+
+      filelog:
+        include:
+          - /var/log/pods/*/*/*.log
+        exclude:
+          - /var/log/pods/*/otel-agent/*.log
+        operators:
+          - type: router
+            routes:
+              - expr: 'body matches "^\\{"'
+                output: json_parser
+              - expr: 'true'
+                output: regex_parser
+          - id: json_parser
+            type: json_parser
+            timestamp:
+              parse_from: attributes.time
+              layout: '%Y-%m-%dT%H:%M:%S.%LZ'
+          - id: regex_parser
+            type: regex_parser
+            regex: '^(?P<time>[^ ]+) (?P<stream>stdout|stderr) (?P<flags>[^ ]*) (?P<log>.*)$'
+
+    processors:
+      k8sattributes:
+        auth_type: serviceAccount
+        passthrough: false
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.pod.uid
+            - k8s.namespace.name
+            - k8s.node.name
+            - k8s.deployment.name
+          labels:
+            - tag_name: app
+              key: app.kubernetes.io/name
+            - tag_name: component
+              key: app.kubernetes.io/component
+
+      resourcedetection:
+        detectors: [env, system]
+        timeout: 5s
+        override: false
+
+      resource:
+        attributes:
+          - key: cluster.id
+            value: fed-observability-test
+            action: insert
+          - key: cluster.role
+            value: hub
+            action: insert
+
+      memory_limiter:
+        check_interval: 1s
+        limit_mib: 400
+        spike_limit_mib: 100
+
+      batch:
+        send_batch_size: 1000
+        send_batch_max_size: 1500
+        timeout: 10s
+
+    exporters:
+      otlp/gateway:
+        endpoint: otel-gateway.observability-hub.svc.cluster.local:4317
+        tls:
+          cert_file: /certs/tls.crt
+          key_file: /certs/tls.key
+          ca_file: /certs/ca.crt
+
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+
+    service:
+      extensions: [health_check]
+      telemetry:
+        metrics:
+          address: 0.0.0.0:8888
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, k8sattributes, resourcedetection, resource, batch]
+          exporters: [otlp/gateway]
+        metrics:
+          receivers: [otlp, kubeletstats]
+          processors: [memory_limiter, k8sattributes, resourcedetection, resource, batch]
+          exporters: [otlp/gateway]
+        logs:
+          receivers: [otlp, filelog]
+          processors: [memory_limiter, k8sattributes, resourcedetection, resource, batch]
+          exporters: [otlp/gateway]

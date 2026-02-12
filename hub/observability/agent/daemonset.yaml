@@ -97,6 +97,9 @@ spec:
             - name: varlibdockercontainers
               mountPath: /var/lib/docker/containers
               readOnly: true
+            - name: mtls-certs
+              mountPath: /certs
+              readOnly: true
           resources:
             requests:
               memory: "256Mi"
@@ -126,6 +129,9 @@ spec:
         - name: varlibdockercontainers
           hostPath:
             path: /var/lib/docker/containers
+        - name: mtls-certs
+          secret:
+            secretName: otel-client-tls
       tolerations:
         - operator: Exists
 ---
