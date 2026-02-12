@@ -1,19 +1,17 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: gateway-tls
+  name: edge-client-cert
   namespace: observability-hub
 spec:
-  secretName: gateway-tls
+  secretName: edge-client-tls
   issuerRef:
     name: observability-ca-issuer
     kind: ClusterIssuer
-  dnsNames:
-    - bert-hub.connected-cloud.io
-    - otel-gateway.observability-hub.svc.cluster.local
-  ipAddresses:
-    - 172.238.181.107
-  duration: 8760h  # 1 year
+  commonName: fed-observability-remote
+  usages:
+    - client auth
+  duration: 8760h   # 1 year
   renewBefore: 720h  # 30 days
   privateKey:
     algorithm: ECDSA

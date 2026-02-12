@@ -2,22 +2,35 @@
 
 ## mTLS Architecture
 
-All telemetry transport uses mutual TLS:
+All telemetry transport between clusters uses mutual TLS:
 
-- **Edge → Hub**: Edge aggregator presents client cert; hub ingress validates against client CA
-- **Hub internal**: Gateway → Redpanda and Routers → Redpanda use TLS with client certs
-- **Hub → Destinations**: TLS to Splunk HEC, Datadog API, customer OTLP endpoints
+- **Edge → Hub**: Edge OTel agents and scrapers present client certificates; hub gateway validates against internal CA
+- **Hub internal**: Gateway → Prometheus/Loki/Tempo uses cluster-internal HTTP (no TLS required — same trust boundary)
+- **Hub → Destinations**: TLS to external endpoints (Splunk HEC, Datadog API, customer OTLP) when configured
 
 ### Certificate Management
 
-- Hub server certificates managed by cert-manager with internal CA
-- Edge client certificates generated via `scripts/generate-client-cert.sh`
-- Rotation via `scripts/rotate-certs.sh` (zero-downtime rolling restart)
-- Default validity: 365 days, rotate at 30 days before expiry
+Two certificate tiers are used:
+
+| Tier | Issuer | Purpose | Storage |
+|------|--------|---------|---------|
+| **Public TLS** | Let's Encrypt (via cert-manager) | HTTPS for BERT demo UIs, Grafana | cert-manager auto-renew |
+| **Internal mTLS** | Self-signed CA (via cert-manager CA issuer) | Edge→Hub OTLP authentication | HashiCorp Vault |
+
+- Hub server certificate and edge client certificates issued by cert-manager using an internal CA (`observability-ca-issuer`)
+- CA keypair stored in Vault (`secret/observability/mtls-ca`) and synced to `observability-ca-keypair` K8s secret
+- Edge client certificates stored in each edge cluster's local Vault instance
+- Default validity: 1 year, auto-renew 30 days before expiry
+
+### Certificate Rotation
+
+- cert-manager handles automatic rotation for both Let's Encrypt and internal CA certificates
+- Manual rotation: `scripts/generate-client-cert.sh` for generating client certs outside cert-manager
+- Rotation script: `scripts/rotate-certs.sh` for zero-downtime rolling restart after cert update
 
 ## PII Scrubbing
 
-All PII scrubbing happens at the edge aggregator **before** data leaves the source cluster:
+> **Status: Planned enhancement.** PII scrubbing requires an edge aggregator deployment between the agent and hub gateway. The current architecture sends telemetry directly from edge agents to the hub. When an aggregator layer is added, the following patterns will be enforced at the edge before data leaves the source cluster:
 
 | Pattern | Replacement | Processor |
 |---------|-------------|-----------|
@@ -42,9 +55,11 @@ Enforced via Kyverno policies in `policies/`:
 
 ## Secrets Management
 
-- Production: External Secrets Operator syncing from HashiCorp Vault
-- Secrets stored: Splunk HEC token, Datadog API key, TLS certificates
-- Never commit plaintext secrets to git (placeholder values only in secret.yaml files)
+- **HashiCorp Vault** runs on both hub and edge clusters (3-pod raft HA)
+- Hub Vault stores: mTLS CA keypair, gateway server cert, edge client certs
+- Edge Vault stores: local client cert + key, CA cert (no CA key)
+- Vault Kubernetes auth enables pods to retrieve secrets at runtime
+- Never commit plaintext secrets to git (placeholder values only in manifest templates)
 
 ## Pod Security
 

@@ -14,10 +14,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - bert-hub.connected-cloud.io
-      secretName: bert-hub-tls
+        - bert-remote.connected-cloud.io
+      secretName: bert-remote-tls
   rules:
-    - host: bert-hub.connected-cloud.io
+    - host: bert-remote.connected-cloud.io
       http:
         paths:
           - path: /

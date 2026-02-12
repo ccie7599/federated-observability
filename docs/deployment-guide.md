@@ -8,8 +8,8 @@ A complete guide to deploying multi-cluster, multi-region observability using Op
 
 1. [Architecture Overview](#1-architecture-overview)
 2. [Prerequisites](#2-prerequisites)
-3. [Deploy the Hub Cluster](#3-deploy-the-hub-cluster)
-4. [Deploy Edge Clusters](#4-deploy-edge-clusters)
+3. [Deploy the Hub Cluster](#3-deploy-the-hub-cluster) (includes Vault, DNS, TLS/mTLS setup)
+4. [Deploy Edge Clusters](#4-deploy-edge-clusters) (includes edge infra, mTLS certs, Vault)
 5. [Instrumenting Your Applications](#5-instrumenting-your-applications)
 6. [Configuring External Destinations](#6-configuring-external-destinations)
 7. [Trace Demo: End-to-End Walkthrough](#7-trace-demo-end-to-end-walkthrough)
@@ -137,12 +137,15 @@ sudo mv kustomize /usr/local/bin/
 
 | From | To | Port | Protocol | Purpose |
 |------|----|------|----------|---------|
-| Edge clusters | Hub gateway LB | 4317 | gRPC (OTLP) | Telemetry export |
-| Edge clusters | Hub gateway LB | 4318 | HTTP (OTLP) | Telemetry export (alternative) |
+| Edge clusters | Hub gateway LB | 4317 | gRPC/mTLS (OTLP) | Telemetry export (mutual TLS) |
+| Edge clusters | Hub gateway LB | 4318 | HTTP/mTLS (OTLP) | Telemetry export (alternative) |
+| Your browser | Hub nginx ingress | 443 | HTTPS | BERT demo / app access |
+| Your browser | Edge nginx ingress | 443 | HTTPS | Edge BERT demo / app access |
 | Your browser | Hub Grafana LB | 3000 | HTTP | Dashboard access |
 | Hub internal | Prometheus | 9090 | HTTP | Metrics storage |
 | Hub internal | Loki | 3100 | HTTP | Log storage |
 | Hub internal | Tempo | 4317 | gRPC | Trace storage |
+| Let's Encrypt | Hub/Edge nginx | 80 | HTTP | ACME HTTP-01 challenges |
 
 ---
 
@@ -265,7 +268,226 @@ GATEWAY_IP=$(kubectl --context $HUB_CTX get svc otel-gateway-external -n observa
 echo "Gateway IP: $GATEWAY_IP"
 ```
 
-### 3.5 (Optional) Firewall the Gateway
+### 3.5 Deploy Vault (Hub)
+
+HashiCorp Vault stores mTLS certificates and other secrets. Deploy a 3-pod HA cluster using Raft consensus:
+
+```bash
+kubectl --context $HUB_CTX apply -k examples/vault/
+```
+
+Wait for pods to start (they'll be in `0/1 Running` — not yet initialized):
+
+```bash
+kubectl --context $HUB_CTX get pods -n vault -w
+```
+
+Initialize Vault (only once, on vault-0):
+
+```bash
+kubectl --context $HUB_CTX exec -n vault vault-0 -- vault operator init \
+  -key-shares=5 -key-threshold=3
+```
+
+**Save the unseal keys and root token securely.** You need 3 of 5 keys to unseal.
+
+Unseal all three pods (repeat with 3 different keys for each pod):
+
+```bash
+for POD in vault-0 vault-1 vault-2; do
+  kubectl --context $HUB_CTX exec -n vault $POD -- vault operator unseal <KEY_1>
+  kubectl --context $HUB_CTX exec -n vault $POD -- vault operator unseal <KEY_2>
+  kubectl --context $HUB_CTX exec -n vault $POD -- vault operator unseal <KEY_3>
+done
+```
+
+Join vault-1 and vault-2 to the Raft cluster:
+
+```bash
+for POD in vault-1 vault-2; do
+  kubectl --context $HUB_CTX exec -n vault $POD -- vault operator raft join http://vault-0.vault-internal:8200
+done
+```
+
+Enable the KV v2 secrets engine:
+
+```bash
+kubectl --context $HUB_CTX exec -n vault vault-0 -- sh -c \
+  'export VAULT_TOKEN=<ROOT_TOKEN> && vault secrets enable -version=2 -path=observability kv'
+```
+
+### 3.6 Set Up DNS (Akamai Edge DNS)
+
+Create DNS A records pointing to the cluster nginx ingress IPs. This example uses Akamai Edge DNS — adjust for your DNS provider.
+
+```bash
+# Get hub nginx ingress external IP
+HUB_NGINX_IP=$(kubectl --context $HUB_CTX get svc ingress-nginx-controller -n ingress-nginx \
+  -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+# Create DNS records (requires Akamai CLI with ~/.edgerc credentials)
+akamai dns create-recordset your-domain.io \
+  --name bert-hub.your-domain.io --type A --ttl 300 --rdata $HUB_NGINX_IP
+```
+
+### 3.7 Set Up TLS and mTLS
+
+The platform uses two layers of TLS:
+- **Public TLS** (Let's Encrypt) — for browser-facing ingresses (BERT demo, Grafana)
+- **Internal mTLS** (self-signed CA via cert-manager) — for edge→hub OTLP telemetry transport
+
+#### Install cert-manager
+
+```bash
+helm install cert-manager jetstack/cert-manager \
+  -n cert-manager --create-namespace \
+  --set crds.enabled=true \
+  --context $HUB_CTX
+```
+
+Deploy Let's Encrypt ClusterIssuers:
+
+```bash
+kubectl --context $HUB_CTX apply -f examples/inference/letsencrypt-issuer.yaml
+```
+
+#### Bootstrap the Internal CA
+
+Generate a self-signed CA for mTLS (this CA is separate from Let's Encrypt):
+
+```bash
+# Generate CA key and cert (10-year validity)
+openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes \
+  -keyout ca.key -out ca.crt \
+  -subj "/CN=Observability mTLS CA/O=Federated Observability"
+```
+
+Create the CA secret in cert-manager's namespace (required for CA ClusterIssuer):
+
+```bash
+kubectl --context $HUB_CTX create secret tls observability-ca-keypair \
+  -n cert-manager \
+  --cert=ca.crt --key=ca.key
+```
+
+Deploy the CA ClusterIssuer (see [`hub/gateway/cert-manager/cluster-issuer.yaml`](../hub/gateway/cert-manager/cluster-issuer.yaml)):
+
+```bash
+kubectl --context $HUB_CTX apply -f hub/gateway/cert-manager/cluster-issuer.yaml
+```
+
+#### Issue Gateway Server Certificate
+
+The gateway cert covers the LoadBalancer IP (for direct gRPC) and the DNS name. See [`hub/gateway/cert-manager/gateway-cert.yaml`](../hub/gateway/cert-manager/gateway-cert.yaml):
+
+```bash
+# Update gateway-cert.yaml with your gateway LB IP and DNS name, then apply:
+kubectl --context $HUB_CTX apply -f hub/gateway/cert-manager/gateway-cert.yaml
+```
+
+Verify the cert is issued:
+
+```bash
+kubectl --context $HUB_CTX get certificate -n observability-hub
+# NAME          READY   SECRET        AGE
+# gateway-tls   True    gateway-tls   30s
+```
+
+#### Issue Edge Client Certificate
+
+Each edge cluster gets a unique client cert signed by the same CA. See [`hub/gateway/cert-manager/edge-client-cert.yaml`](../hub/gateway/cert-manager/edge-client-cert.yaml):
+
+```bash
+kubectl --context $HUB_CTX apply -f hub/gateway/cert-manager/edge-client-cert.yaml
+```
+
+#### Create Client CA Secret
+
+The gateway needs the CA cert to validate incoming client certificates:
+
+```bash
+kubectl --context $HUB_CTX create secret generic client-ca \
+  -n observability-hub \
+  --from-file=ca.crt=ca.crt
+```
+
+#### Store Certs in Hub Vault
+
+Store all mTLS certificates in Vault as the authoritative source:
+
+```bash
+HUB_VAULT_ADDR="http://$(kubectl --context $HUB_CTX get svc vault-external -n vault \
+  -o jsonpath='{.status.loadBalancer.ingress[0].ip}'):8200"
+
+# Store CA cert + key
+vault kv put -mount=observability $HUB_VAULT_ADDR mtls-ca \
+  ca.crt=@ca.crt ca.key=@ca.key
+
+# Extract and store gateway server cert
+kubectl --context $HUB_CTX get secret gateway-tls -n observability-hub \
+  -o jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/gw.crt
+kubectl --context $HUB_CTX get secret gateway-tls -n observability-hub \
+  -o jsonpath='{.data.tls\.key}' | base64 -d > /tmp/gw.key
+vault kv put -mount=observability $HUB_VAULT_ADDR gateway-tls \
+  tls.crt=@/tmp/gw.crt tls.key=@/tmp/gw.key
+
+# Extract and store edge client cert
+kubectl --context $HUB_CTX get secret edge-client-tls -n observability-hub \
+  -o jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/edge.crt
+kubectl --context $HUB_CTX get secret edge-client-tls -n observability-hub \
+  -o jsonpath='{.data.tls\.key}' | base64 -d > /tmp/edge.key
+vault kv put -mount=observability $HUB_VAULT_ADDR edge-certs/$(EDGE_CLUSTER_NAME) \
+  tls.crt=@/tmp/edge.crt tls.key=@/tmp/edge.key ca.crt=@ca.crt
+
+# Clean up temp files
+rm -f ca.key ca.crt /tmp/gw.crt /tmp/gw.key /tmp/edge.crt /tmp/edge.key
+```
+
+#### Apply Gateway with mTLS
+
+The gateway config ([`hub/gateway/config.yaml`](../hub/gateway/config.yaml)) has TLS enabled on both gRPC and HTTP receivers:
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+        tls:
+          cert_file: /certs/tls.crt
+          key_file: /certs/tls.key
+          client_ca_file: /certs/ca.crt
+      http:
+        endpoint: 0.0.0.0:4318
+        tls:
+          cert_file: /certs/tls.crt
+          key_file: /certs/tls.key
+          client_ca_file: /certs/ca.crt
+```
+
+The gateway deployment ([`hub/gateway/deployment.yaml`](../hub/gateway/deployment.yaml)) mounts these from K8s secrets:
+- `gateway-tls` secret → `/certs/tls.crt`, `/certs/tls.key`
+- `client-ca` secret → `/certs/ca.crt`
+
+Redeploy the gateway if config changed:
+
+```bash
+kubectl --context $HUB_CTX apply -k hub/gateway/
+kubectl --context $HUB_CTX rollout restart deployment/otel-gateway -n observability-hub
+```
+
+#### Deploy BERT Demo Ingress with TLS
+
+The BERT inference ingress uses Let's Encrypt via cert-manager (see [`examples/inference/bert-ingress.yaml`](../examples/inference/bert-ingress.yaml)):
+
+```bash
+kubectl --context $HUB_CTX apply -f examples/inference/bert-ingress.yaml
+kubectl --context $HUB_CTX apply -f examples/inference/demo-ingress.yaml
+```
+
+> **Hairpin NAT note (LKE):** If the Let's Encrypt HTTP-01 challenge fails with EOF, it's likely because nginx has PROXY protocol enabled but cert-manager's self-check bypasses the NodeBalancer. Fix: temporarily remove `service.beta.kubernetes.io/linode-loadbalancer-proxy-protocol` from the nginx service and set `use-proxy-protocol: false` in the nginx configmap, issue the cert, then restore both. See [`hub/gateway/cert-manager/`](../hub/gateway/cert-manager/) for reference.
+
+### 3.8 (Optional) Firewall the Gateway
 
 Restrict gateway access to known edge cluster IPs using a Linode Cloud Firewall:
 
@@ -287,7 +509,7 @@ linode-cli firewalls create \
   }]"
 ```
 
-### 3.6 Verify Hub Deployment
+### 3.9 Verify Hub Deployment
 
 ```bash
 # All pods should be Running
@@ -334,12 +556,90 @@ EDGE_CTX="lke${EDGE_CLUSTER_ID}-ctx"
 kubectl --context $EDGE_CTX get nodes
 ```
 
-### 4.2 Deploy Observability Agents on Edge
+### 4.2 Deploy Edge Infrastructure (nginx-ingress, cert-manager, Vault)
+
+Each edge cluster needs ingress, certificate management, and secret storage:
+
+```bash
+# nginx-ingress
+helm install ingress-nginx ingress-nginx/ingress-nginx \
+  -n ingress-nginx --create-namespace --context $EDGE_CTX
+
+# cert-manager
+helm install cert-manager jetstack/cert-manager \
+  -n cert-manager --create-namespace \
+  --set crds.enabled=true --context $EDGE_CTX
+
+# Let's Encrypt issuers
+kubectl --context $EDGE_CTX apply -f examples/inference/letsencrypt-issuer.yaml
+
+# Vault
+kubectl --context $EDGE_CTX apply -k examples/vault/
+```
+
+Initialize and unseal the edge Vault (same process as hub — see Section 3.5). Then enable the KV v2 engine:
+
+```bash
+kubectl --context $EDGE_CTX exec -n vault vault-0 -- sh -c \
+  'export VAULT_TOKEN=<EDGE_ROOT_TOKEN> && vault secrets enable -version=2 -path=secret kv'
+```
+
+Get the edge nginx ingress IP for DNS:
+
+```bash
+EDGE_NGINX_IP=$(kubectl --context $EDGE_CTX get svc ingress-nginx-controller -n ingress-nginx \
+  -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+echo "Edge nginx IP: $EDGE_NGINX_IP"
+```
+
+Create DNS record for edge:
+
+```bash
+akamai dns create-recordset your-domain.io \
+  --name bert-remote.your-domain.io --type A --ttl 300 --rdata $EDGE_NGINX_IP
+```
+
+### 4.3 Deploy mTLS Client Certs to Edge
+
+Copy the edge client certificate from the hub (where it was generated by cert-manager) to the edge cluster:
+
+```bash
+# Extract edge client cert from hub
+kubectl --context $HUB_CTX get secret edge-client-tls -n observability-hub \
+  -o jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/edge-client.crt
+kubectl --context $HUB_CTX get secret edge-client-tls -n observability-hub \
+  -o jsonpath='{.data.tls\.key}' | base64 -d > /tmp/edge-client.key
+
+# Create the secret on the edge cluster
+kubectl --context $EDGE_CTX create secret generic otel-client-tls \
+  -n observability \
+  --from-file=tls.crt=/tmp/edge-client.crt \
+  --from-file=tls.key=/tmp/edge-client.key \
+  --from-file=ca.crt=ca.crt
+
+rm -f /tmp/edge-client.crt /tmp/edge-client.key
+```
+
+Store certs in edge Vault (CA cert only — no private key on edge):
+
+```bash
+EDGE_VAULT_ADDR="http://$(kubectl --context $EDGE_CTX get svc vault-external -n vault \
+  -o jsonpath='{.status.loadBalancer.ingress[0].ip}'):8200"
+
+# Store CA cert (no key — edge doesn't need to sign new certs)
+vault kv put -mount=secret $EDGE_VAULT_ADDR observability/mtls-ca ca.crt=@ca.crt
+
+# Store this edge's client cert
+vault kv put -mount=secret $EDGE_VAULT_ADDR observability/client-tls \
+  tls.crt=@/tmp/edge-client.crt tls.key=@/tmp/edge-client.key ca.crt=@ca.crt
+```
+
+### 4.4 Deploy Observability Agents on Edge
 
 Edge agents are identical to hub agents except:
 - `cluster.id` is set to the edge cluster's unique name
 - `cluster.role` is `edge`
-- The exporter sends to the hub gateway's external IP instead of an internal service
+- The exporter sends to the hub gateway's external IP with **mTLS** (client cert authentication)
 
 The edge-specific configs are in [`edge/`](../edge/):
 - [`edge/agent-config.yaml`](../edge/agent-config.yaml) — OTel agent ConfigMap
@@ -349,6 +649,7 @@ Before deploying, customize these configs:
 
 1. Set `cluster.id` to your edge cluster's name (in the `resource` processor)
 2. Set the exporter endpoint to your hub gateway's external IP
+3. TLS cert paths are pre-configured to `/certs/` (mounted from the `otel-client-tls` secret)
 
 ```yaml
 # In edge/agent-config.yaml, update these:
@@ -366,7 +667,9 @@ exporters:
   otlp/hub:
     endpoint: <GATEWAY_IP>:4317     # <-- hub gateway LoadBalancer IP
     tls:
-      insecure: true
+      cert_file: /certs/tls.crt     # mTLS client cert
+      key_file: /certs/tls.key      # mTLS client key
+      ca_file: /certs/ca.crt        # CA to verify gateway server cert
 ```
 
 Deploy the same RBAC, kube-state-metrics, DaemonSet, and scraper manifests used on the hub — they're generic. Copy them from `hub/observability/` and apply with the edge ConfigMaps:
@@ -387,7 +690,23 @@ kubectl --context $EDGE_CTX apply -f hub/observability/agent/daemonset.yaml
 kubectl --context $EDGE_CTX apply -f hub/observability/scraper/deployment.yaml
 ```
 
-### 4.3 (Optional) Deploy DCGM Exporter for GPU Nodes
+After applying, patch the DaemonSet and Deployment to mount the mTLS cert volume:
+
+```bash
+# Patch agent DaemonSet
+kubectl --context $EDGE_CTX patch daemonset otel-agent -n observability --type json -p '[
+  {"op":"add","path":"/spec/template/spec/volumes/-","value":{"name":"client-tls","secret":{"secretName":"otel-client-tls"}}},
+  {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts/-","value":{"name":"client-tls","mountPath":"/certs","readOnly":true}}
+]'
+
+# Patch scraper Deployment
+kubectl --context $EDGE_CTX patch deployment otel-scraper -n observability --type json -p '[
+  {"op":"add","path":"/spec/template/spec/volumes/-","value":{"name":"client-tls","secret":{"secretName":"otel-client-tls"}}},
+  {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts/-","value":{"name":"client-tls","mountPath":"/certs","readOnly":true}}
+]'
+```
+
+### 4.5 (Optional) Deploy DCGM Exporter for GPU Nodes
 
 If the edge cluster has GPU nodes:
 
@@ -397,7 +716,18 @@ kubectl --context $EDGE_CTX apply -f hub/monitoring/dcgm-exporter.yaml
 
 Add a dcgm-exporter scrape job to the edge scraper config. See the hub scraper config ([`hub/observability/scraper/config.yaml`](../hub/observability/scraper/config.yaml)) for the pattern.
 
-### 4.4 Verify Edge-to-Hub Data Flow
+### 4.6 Deploy Edge BERT Demo Ingress with TLS
+
+If deploying the BERT inference demo on the edge cluster:
+
+```bash
+kubectl --context $EDGE_CTX apply -f examples/inference/edge-bert-ingress.yaml
+kubectl --context $EDGE_CTX apply -f examples/inference/edge-demo-ingress.yaml
+```
+
+cert-manager will automatically provision a Let's Encrypt cert for the edge domain.
+
+### 4.7 Verify Edge-to-Hub Data Flow
 
 ```bash
 # Check edge agents are running
@@ -812,6 +1142,10 @@ kubectl --context $HUB_CTX logs -n observability daemonset/otel-agent --tail=20
 | Agent OOMKilled | Memory limit too low | Increase `memory_limiter` and container limits |
 | No logs collected | filelog path wrong | Verify `/var/log/pods` is mounted read-only |
 | OTLP export failures | Gateway unreachable | Check gateway service DNS, network policies |
+| `x509: certificate is valid for ... not <IP>` | Gateway cert missing IP SAN | Add `ipAddresses` to gateway-cert.yaml, delete and reapply cert |
+| `tls: bad certificate` | Client cert not signed by expected CA | Verify `otel-client-tls` secret has cert signed by the same CA in `client-ca` |
+| `remote error: tls: certificate required` | Client cert not mounted | Check DaemonSet/Deployment has `otel-client-tls` volume mount at `/certs` |
+| Let's Encrypt HTTP-01 EOF | Hairpin NAT (LKE + PROXY protocol) | Temporarily disable proxy protocol on both nginx configmap and service annotation |
 
 ### 8.2 Verify Gateway
 
@@ -969,12 +1303,19 @@ volumeClaimTemplates:
 
 ### 9.4 mTLS Between Edge and Hub
 
-For production, enable mTLS so only authorized edge clusters can send data:
-1. Deploy cert-manager on the hub cluster
-2. Create a CA issuer (see [`hub/gateway/cert-manager/`](../hub/gateway/cert-manager/))
-3. Generate client certificates per edge cluster using [`scripts/generate-client-cert.sh`](../scripts/generate-client-cert.sh)
-4. Configure hub ingress to validate client certificates
-5. Configure edge exporters to present client certificates
+mTLS is configured during initial deployment (Sections [3.7](#37-set-up-tls-and-mtls) and [4.3](#43-deploy-mtls-client-certs-to-edge)). To add a new edge cluster to an existing deployment:
+
+1. Create a new Certificate resource (copy [`hub/gateway/cert-manager/edge-client-cert.yaml`](../hub/gateway/cert-manager/edge-client-cert.yaml), change `commonName` and `secretName`)
+2. Apply on the hub cluster — cert-manager signs it with the existing CA
+3. Copy the generated secret to the new edge cluster as `otel-client-tls`
+4. Store in both Vaults (hub: `observability/edge-certs/<cluster-name>`, edge: `secret/observability/client-tls`)
+5. No gateway restart needed — the CA trusts all certs it signs
+
+Key files:
+- CA ClusterIssuer: [`hub/gateway/cert-manager/cluster-issuer.yaml`](../hub/gateway/cert-manager/cluster-issuer.yaml)
+- Gateway server cert: [`hub/gateway/cert-manager/gateway-cert.yaml`](../hub/gateway/cert-manager/gateway-cert.yaml)
+- Edge client cert template: [`hub/gateway/cert-manager/edge-client-cert.yaml`](../hub/gateway/cert-manager/edge-client-cert.yaml)
+- Client CA for validation: [`hub/gateway/cert-manager/client-ca-secret.yaml`](../hub/gateway/cert-manager/client-ca-secret.yaml)
 
 ### 9.5 PII Scrubbing at Edge
 

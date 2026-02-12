@@ -35,6 +35,9 @@ spec:
           args:
             - --config=/etc/otel/config.yaml
           ports:
+            - name: otlp-grpc
+              containerPort: 4317
+              protocol: TCP
             - name: otlp-http
               containerPort: 4318
               protocol: TCP
@@ -64,9 +67,20 @@ spec:
             - name: config
               mountPath: /etc/otel
               readOnly: true
-            - name: kafka-certs
-              mountPath: /certs
+            - name: gateway-tls
+              mountPath: /certs/tls.crt
+              subPath: tls.crt
               readOnly: true
+            - name: gateway-tls
+              mountPath: /certs/tls.key
+              subPath: tls.key
+              readOnly: true
+            - name: client-ca
+              mountPath: /certs/ca.crt
+              subPath: ca.crt
+              readOnly: true
+            - name: queue
+              mountPath: /var/otel/queue
           livenessProbe:
             httpGet:
               path: /
@@ -83,9 +97,14 @@ spec:
         - name: config
           configMap:
             name: otel-gateway-config
-        - name: kafka-certs
+        - name: gateway-tls
           secret:
-            secretName: kafka-client-tls
+            secretName: gateway-tls
+        - name: client-ca
+          secret:
+            secretName: client-ca
+        - name: queue
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -98,6 +117,10 @@ spec:
   selector:
     app.kubernetes.io/name: otel-gateway
   ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: otlp-grpc
+      protocol: TCP
     - name: otlp-http
       port: 4318
       targetPort: otlp-http

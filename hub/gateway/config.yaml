@@ -10,11 +10,16 @@ data:
         protocols:
           grpc:
             endpoint: 0.0.0.0:4317
+            tls:
+              cert_file: /certs/tls.crt
+              key_file: /certs/tls.key
+              client_ca_file: /certs/ca.crt
           http:
             endpoint: 0.0.0.0:4318
-            cors:
-              allowed_origins: ["*"]
-              allowed_headers: ["X-Cluster-ID", "X-Environment"]
+            tls:
+              cert_file: /certs/tls.crt
+              key_file: /certs/tls.key
+              client_ca_file: /certs/ca.crt
 
     processors:
       memory_limiter:
@@ -74,10 +79,6 @@ data:
       file_storage:
         directory: /var/otel/queue
         timeout: 10s
-        compaction:
-          on_start: true
-          on_rebound: true
-          directory: /var/otel/queue/compaction
 
     service:
       extensions: [health_check, zpages, file_storage]
