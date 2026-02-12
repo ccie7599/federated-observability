@@ -114,9 +114,31 @@ kubectl exec -n vault vault-0 -- vault write auth/kubernetes/role/observability 
 
 echo "   Policies and roles created."
 
+# Create VSO (Vault Secrets Operator) policy and role
+echo ""
+echo "10. Creating VSO policy and role..."
+kubectl exec -n vault vault-0 -- sh -c 'vault policy write vso-read - <<EOF
+path "observability/data/*" {
+  capabilities = ["read"]
+}
+path "observability/metadata/*" {
+  capabilities = ["read", "list"]
+}
+EOF'
+
+kubectl exec -n vault vault-0 -- vault write auth/kubernetes/role/vso \
+    bound_service_account_names=vault-secrets-operator-controller-manager,vso-auth \
+    bound_service_account_namespaces=vault-secrets-operator-system,observability,observability-hub \
+    policies=vso-read \
+    ttl=1h
+
+echo "   VSO policy and role created."
+echo "   Bound SAs: vault-secrets-operator-controller-manager, vso-auth"
+echo "   Bound namespaces: vault-secrets-operator-system, observability, observability-hub"
+
 # Enable audit logging
 echo ""
-echo "10. Enabling audit logging..."
+echo "11. Enabling audit logging..."
 kubectl exec -n vault vault-0 -- vault audit enable file file_path=/vault/logs/audit.log 2>/dev/null || echo "   Audit logging already enabled."
 
 echo ""

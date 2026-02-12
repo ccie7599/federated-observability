@@ -180,7 +180,11 @@ kubectl exec -n $NAMESPACE $VAULT_POD -- env VAULT_TOKEN=$VAULT_TOKEN \
 kubectl exec -n $NAMESPACE $VAULT_POD -- env VAULT_TOKEN=$VAULT_TOKEN \
     vault secrets enable -path=api -version=2 kv 2>/dev/null || echo "api kv already enabled"
 
-echo "✓ Secrets engines enabled"
+# Observability KV v2 engine (for mTLS certs, destination credentials)
+kubectl exec -n $NAMESPACE $VAULT_POD -- env VAULT_TOKEN=$VAULT_TOKEN \
+    vault secrets enable -path=observability -version=2 kv 2>/dev/null || echo "observability kv already enabled"
+
+echo "✓ Secrets engines enabled (admin, api, observability)"
 echo ""
 
 # Step 7: Upload and create policies
@@ -236,6 +240,55 @@ kubectl exec -n $NAMESPACE $VAULT_POD -- env VAULT_TOKEN=$VAULT_TOKEN \
     ttl=12h
 
 echo "✓ Kubernetes auth roles created"
+echo ""
+
+# Step 8b: Vault Secrets Operator (VSO) policy and role
+echo "Step 8b: Creating VSO policy and role..."
+
+kubectl exec -n $NAMESPACE $VAULT_POD -i -- env VAULT_TOKEN=$VAULT_TOKEN \
+    vault policy write vso-read - <<'POLICY'
+# Vault Secrets Operator - read access to observability secrets
+path "observability/data/*" {
+  capabilities = ["read"]
+}
+path "observability/metadata/*" {
+  capabilities = ["read", "list"]
+}
+# For edge clusters using the 'secret/' mount
+path "secret/data/observability/*" {
+  capabilities = ["read"]
+}
+path "secret/metadata/observability/*" {
+  capabilities = ["read", "list"]
+}
+POLICY
+
+kubectl exec -n $NAMESPACE $VAULT_POD -- env VAULT_TOKEN=$VAULT_TOKEN \
+    vault write auth/kubernetes/role/vso \
+    bound_service_account_names=vault-secrets-operator-controller-manager,vso-auth \
+    bound_service_account_namespaces=vault-secrets-operator-system,observability,observability-hub \
+    policies=vso-read \
+    ttl=1h
+
+# Observability workload role (for OTel agents/scrapers)
+kubectl exec -n $NAMESPACE $VAULT_POD -i -- env VAULT_TOKEN=$VAULT_TOKEN \
+    vault policy write observability-read - <<'POLICY'
+path "observability/data/*" {
+  capabilities = ["read"]
+}
+path "observability/metadata/*" {
+  capabilities = ["read", "list"]
+}
+POLICY
+
+kubectl exec -n $NAMESPACE $VAULT_POD -- env VAULT_TOKEN=$VAULT_TOKEN \
+    vault write auth/kubernetes/role/observability \
+    bound_service_account_names=otel-agent,otel-scraper,otel-gateway \
+    bound_service_account_namespaces=observability,observability-hub \
+    policies=observability-read \
+    ttl=1h
+
+echo "✓ VSO and observability roles created"
 echo ""
 
 # Step 9: Enable audit logging

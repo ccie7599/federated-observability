@@ -401,47 +401,57 @@ Each edge cluster gets a unique client cert signed by the same CA. See [`hub/gat
 kubectl --context $HUB_CTX apply -f hub/gateway/cert-manager/edge-client-cert.yaml
 ```
 
-#### Create Client CA Secret
+#### Sync Certs to Vault
 
-The gateway needs the CA cert to validate incoming client certificates:
-
-```bash
-kubectl --context $HUB_CTX create secret generic client-ca \
-  -n observability-hub \
-  --from-file=ca.crt=ca.crt
-```
-
-#### Store Certs in Hub Vault
-
-Store all mTLS certificates in Vault as the authoritative source:
+Store all mTLS certificates in Vault. VSO (Vault Secrets Operator) then syncs them to K8s secrets automatically — including the `client-ca` secret the gateway needs:
 
 ```bash
-HUB_VAULT_ADDR="http://$(kubectl --context $HUB_CTX get svc vault-external -n vault \
-  -o jsonpath='{.status.loadBalancer.ingress[0].ip}'):8200"
-
-# Store CA cert + key
-vault kv put -mount=observability $HUB_VAULT_ADDR mtls-ca \
-  ca.crt=@ca.crt ca.key=@ca.key
-
-# Extract and store gateway server cert
-kubectl --context $HUB_CTX get secret gateway-tls -n observability-hub \
-  -o jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/gw.crt
-kubectl --context $HUB_CTX get secret gateway-tls -n observability-hub \
-  -o jsonpath='{.data.tls\.key}' | base64 -d > /tmp/gw.key
-vault kv put -mount=observability $HUB_VAULT_ADDR gateway-tls \
-  tls.crt=@/tmp/gw.crt tls.key=@/tmp/gw.key
-
-# Extract and store edge client cert
-kubectl --context $HUB_CTX get secret edge-client-tls -n observability-hub \
-  -o jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/edge.crt
-kubectl --context $HUB_CTX get secret edge-client-tls -n observability-hub \
-  -o jsonpath='{.data.tls\.key}' | base64 -d > /tmp/edge.key
-vault kv put -mount=observability $HUB_VAULT_ADDR edge-certs/$(EDGE_CLUSTER_NAME) \
-  tls.crt=@/tmp/edge.crt tls.key=@/tmp/edge.key ca.crt=@ca.crt
-
-# Clean up temp files
-rm -f ca.key ca.crt /tmp/gw.crt /tmp/gw.key /tmp/edge.crt /tmp/edge.key
+# Run the cert sync script (extracts from cert-manager, writes to both Vaults)
+./scripts/sync-certs-to-vault.sh
 ```
+
+Or manually via vault CLI:
+
+```bash
+# Store CA cert + key in hub Vault
+kubectl --context $HUB_CTX exec -n vault vault-0 -- vault kv put observability/mtls-ca \
+  ca_crt="$(cat ca.crt)" ca_key="$(cat ca.key)"
+```
+
+#### Install Vault Secrets Operator (Hub)
+
+VSO syncs Vault secrets to K8s secrets and restarts workloads on rotation:
+
+```bash
+helm repo add hashicorp https://helm.releases.hashicorp.com
+helm install vault-secrets-operator hashicorp/vault-secrets-operator \
+  -n vault-secrets-operator-system --create-namespace --context $HUB_CTX
+```
+
+Update the Vault K8s auth role to include the VSO service account:
+
+```bash
+kubectl --context $HUB_CTX exec -n vault vault-0 -- vault write auth/kubernetes/role/vso \
+  bound_service_account_names=vault-secrets-operator-controller-manager,vso-auth \
+  bound_service_account_namespaces=vault-secrets-operator-system,observability-hub \
+  policies=vso-read ttl=1h
+```
+
+Apply VSO CRDs (VaultConnection, VaultAuth, VaultStaticSecret):
+
+```bash
+kubectl --context $HUB_CTX apply -k hub/vault-secrets-operator/
+```
+
+Verify the `client-ca` secret syncs from Vault:
+
+```bash
+kubectl --context $HUB_CTX get vaultstaticsecret -n observability-hub
+# NAME        AGE
+# client-ca   30s   (status should show SecretSynced=True)
+```
+
+> **Note:** The `client-ca` K8s secret is now managed by VSO, not created manually. The gateway deployment mounts it unchanged — VSO's transformation templates map Vault KV keys (`ca_crt`) to the expected K8s secret keys (`ca.crt`).
 
 #### Apply Gateway with mTLS
 
@@ -577,11 +587,37 @@ kubectl --context $EDGE_CTX apply -f examples/inference/letsencrypt-issuer.yaml
 kubectl --context $EDGE_CTX apply -k examples/vault/
 ```
 
-Initialize and unseal the edge Vault (same process as hub — see Section 3.5). Then enable the KV v2 engine:
+Initialize and unseal the edge Vault (same process as hub — see Section 3.5). Then enable the KV v2 engine and K8s auth:
 
 ```bash
 kubectl --context $EDGE_CTX exec -n vault vault-0 -- sh -c \
   'export VAULT_TOKEN=<EDGE_ROOT_TOKEN> && vault secrets enable -version=2 -path=secret kv'
+
+# Enable K8s auth on edge Vault (required for VSO)
+kubectl --context $EDGE_CTX exec -n vault vault-0 -- sh -c \
+  'export VAULT_TOKEN=<EDGE_ROOT_TOKEN> && \
+   vault auth enable kubernetes && \
+   vault write auth/kubernetes/config kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443"'
+```
+
+Install VSO on edge and configure the Vault role:
+
+```bash
+helm install vault-secrets-operator hashicorp/vault-secrets-operator \
+  -n vault-secrets-operator-system --create-namespace --context $EDGE_CTX
+
+# Create VSO policy and role on edge Vault
+kubectl --context $EDGE_CTX exec -n vault vault-0 -- sh -c 'export VAULT_TOKEN=<EDGE_ROOT_TOKEN> && \
+  vault policy write vso-read - <<EOF
+path "secret/data/observability/*" { capabilities = ["read"] }
+path "secret/metadata/observability/*" { capabilities = ["read", "list"] }
+EOF'
+
+kubectl --context $EDGE_CTX exec -n vault vault-0 -- sh -c 'export VAULT_TOKEN=<EDGE_ROOT_TOKEN> && \
+  vault write auth/kubernetes/role/vso \
+    bound_service_account_names=vault-secrets-operator-controller-manager,vso-auth \
+    bound_service_account_namespaces=vault-secrets-operator-system,observability \
+    policies=vso-read ttl=1h'
 ```
 
 Get the edge nginx ingress IP for DNS:
@@ -601,38 +637,36 @@ akamai dns create-recordset your-domain.io \
 
 ### 4.3 Deploy mTLS Client Certs to Edge
 
-Copy the edge client certificate from the hub (where it was generated by cert-manager) to the edge cluster:
+Certificates are distributed automatically via **Vault + VSO**. The sync script pushes cert-manager certs to both Vaults, and VSO creates the K8s secrets:
 
 ```bash
-# Extract edge client cert from hub
-kubectl --context $HUB_CTX get secret edge-client-tls -n observability-hub \
-  -o jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/edge-client.crt
-kubectl --context $HUB_CTX get secret edge-client-tls -n observability-hub \
-  -o jsonpath='{.data.tls\.key}' | base64 -d > /tmp/edge-client.key
+# Sync certs from cert-manager → Vault (both hub and edge)
+./scripts/sync-certs-to-vault.sh
 
-# Create the secret on the edge cluster
-kubectl --context $EDGE_CTX create secret generic otel-client-tls \
-  -n observability \
-  --from-file=tls.crt=/tmp/edge-client.crt \
-  --from-file=tls.key=/tmp/edge-client.key \
-  --from-file=ca.crt=ca.crt
-
-rm -f /tmp/edge-client.crt /tmp/edge-client.key
+# Apply VSO CRDs on edge (VaultConnection, VaultAuth, VaultStaticSecret)
+kubectl --context $EDGE_CTX apply -k edge/vault-secrets-operator/
 ```
 
-Store certs in edge Vault (CA cert only — no private key on edge):
+Verify VSO created the `otel-client-tls` secret:
 
 ```bash
-EDGE_VAULT_ADDR="http://$(kubectl --context $EDGE_CTX get svc vault-external -n vault \
-  -o jsonpath='{.status.loadBalancer.ingress[0].ip}'):8200"
+kubectl --context $EDGE_CTX get vaultstaticsecret -n observability
+# NAME              AGE
+# otel-client-tls   30s   (status should show SecretSynced=True)
 
-# Store CA cert (no key — edge doesn't need to sign new certs)
-vault kv put -mount=secret $EDGE_VAULT_ADDR observability/mtls-ca ca.crt=@ca.crt
-
-# Store this edge's client cert
-vault kv put -mount=secret $EDGE_VAULT_ADDR observability/client-tls \
-  tls.crt=@/tmp/edge-client.crt tls.key=@/tmp/edge-client.key ca.crt=@ca.crt
+kubectl --context $EDGE_CTX get secret otel-client-tls -n observability
+# NAME              TYPE     DATA   AGE
+# otel-client-tls   Opaque   3      30s   (keys: ca.crt, tls.crt, tls.key)
 ```
+
+> **How it works:** VSO polls Vault every 60s. When certs rotate (cert-manager renews → sync script updates Vault), VSO detects the change, updates the K8s secret, and restarts the agent DaemonSet and scraper Deployment via `rolloutRestartTargets`. See [`docs/adr/004-vault-secrets-operator.md`](adr/004-vault-secrets-operator.md) for the architecture decision.
+>
+> **Manual fallback:** If VSO is unavailable, you can create the secret manually:
+> ```bash
+> kubectl --context $EDGE_CTX create secret generic otel-client-tls -n observability \
+>   --from-file=tls.crt=/tmp/edge-client.crt --from-file=tls.key=/tmp/edge-client.key \
+>   --from-file=ca.crt=ca.crt
+> ```
 
 ### 4.4 Deploy Observability Agents on Edge
 
@@ -1303,19 +1337,37 @@ volumeClaimTemplates:
 
 ### 9.4 mTLS Between Edge and Hub
 
-mTLS is configured during initial deployment (Sections [3.7](#37-set-up-tls-and-mtls) and [4.3](#43-deploy-mtls-client-certs-to-edge)). To add a new edge cluster to an existing deployment:
+mTLS is configured during initial deployment (Sections [3.7](#37-set-up-tls-and-mtls) and [4.3](#43-deploy-mtls-client-certs-to-edge)). Certificate distribution is automated via **Vault Secrets Operator (VSO)**.
+
+#### Certificate Lifecycle
+
+```
+cert-manager → K8s Secret → sync-certs-to-vault.sh → Vault KV → VSO → K8s Secret → Pod
+```
+
+- **cert-manager** issues and auto-renews certificates (30 days before expiry)
+- **sync script** pushes renewed certs to Vault on both clusters
+- **VSO** polls Vault every 60s and updates K8s secrets when changes are detected
+- **rolloutRestartTargets** automatically restarts pods when certs rotate
+
+#### Adding a New Edge Cluster
 
 1. Create a new Certificate resource (copy [`hub/gateway/cert-manager/edge-client-cert.yaml`](../hub/gateway/cert-manager/edge-client-cert.yaml), change `commonName` and `secretName`)
 2. Apply on the hub cluster — cert-manager signs it with the existing CA
-3. Copy the generated secret to the new edge cluster as `otel-client-tls`
-4. Store in both Vaults (hub: `observability/edge-certs/<cluster-name>`, edge: `secret/observability/client-tls`)
-5. No gateway restart needed — the CA trusts all certs it signs
+3. Run `./scripts/sync-certs-to-vault.sh` to push certs to both Vaults
+4. Install VSO on the new edge cluster and apply `edge/vault-secrets-operator/`
+5. VSO creates `otel-client-tls` secret automatically — no manual kubectl needed
+6. No gateway restart needed — the CA trusts all certs it signs
 
-Key files:
+#### Key Files
+
 - CA ClusterIssuer: [`hub/gateway/cert-manager/cluster-issuer.yaml`](../hub/gateway/cert-manager/cluster-issuer.yaml)
 - Gateway server cert: [`hub/gateway/cert-manager/gateway-cert.yaml`](../hub/gateway/cert-manager/gateway-cert.yaml)
 - Edge client cert template: [`hub/gateway/cert-manager/edge-client-cert.yaml`](../hub/gateway/cert-manager/edge-client-cert.yaml)
-- Client CA for validation: [`hub/gateway/cert-manager/client-ca-secret.yaml`](../hub/gateway/cert-manager/client-ca-secret.yaml)
+- Hub VSO manifests: [`hub/vault-secrets-operator/`](../hub/vault-secrets-operator/)
+- Edge VSO manifests: [`edge/vault-secrets-operator/`](../edge/vault-secrets-operator/)
+- Cert sync script: [`scripts/sync-certs-to-vault.sh`](../scripts/sync-certs-to-vault.sh)
+- ADR: [`docs/adr/004-vault-secrets-operator.md`](adr/004-vault-secrets-operator.md)
 
 ### 9.5 PII Scrubbing at Edge
 

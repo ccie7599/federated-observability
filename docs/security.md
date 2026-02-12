@@ -55,11 +55,51 @@ Enforced via Kyverno policies in `policies/`:
 
 ## Secrets Management
 
-- **HashiCorp Vault** runs on both hub and edge clusters (3-pod raft HA)
+### Vault Infrastructure
+
+- **HashiCorp Vault** runs on both hub and edge clusters (3-pod Raft HA)
 - Hub Vault stores: mTLS CA keypair, gateway server cert, edge client certs
 - Edge Vault stores: local client cert + key, CA cert (no CA key)
-- Vault Kubernetes auth enables pods to retrieve secrets at runtime
+- Vault Kubernetes auth enables service accounts to authenticate to Vault
 - Never commit plaintext secrets to git (placeholder values only in manifest templates)
+
+### Vault Secrets Operator (VSO)
+
+The **Vault Secrets Operator** automates secret distribution from Vault to K8s secrets:
+
+```
+cert-manager ──issues──▶ K8s Secret ──sync-certs-to-vault.sh──▶ Vault KV
+                                                                    │
+                                                                   VSO
+                                                                    │
+                                                                    ▼
+                                                              K8s Secret ──▶ Pod
+```
+
+| Component | Purpose |
+|-----------|---------|
+| `VaultConnection` | Points VSO to the cluster-local Vault instance |
+| `VaultAuth` | Configures K8s auth with a dedicated `vso-auth` ServiceAccount |
+| `VaultStaticSecret` | Syncs a Vault KV path to a K8s Secret, polls every 60s |
+
+**Automatic rotation:** When certs are renewed (cert-manager → sync script → Vault), VSO detects the change and:
+1. Updates the K8s Secret with new cert data
+2. Triggers a rolling restart of configured workloads via `rolloutRestartTargets`
+
+**Degradation behavior:** If Vault is sealed or unavailable, existing K8s secrets persist and pods continue running with current certs. VSO resumes syncing when Vault is available.
+
+**Key manifests:**
+- Hub: `hub/vault-secrets-operator/` (syncs `client-ca` for gateway mTLS validation)
+- Edge: `edge/vault-secrets-operator/` (syncs `otel-client-tls` for agent/scraper mTLS)
+
+See [ADR-004](adr/004-vault-secrets-operator.md) for the decision rationale and comparison with alternatives (External Secrets Operator, Vault Agent sidecar).
+
+### Dynamic Secrets (Future)
+
+For dynamic secrets (database credentials, short-lived tokens), the **Vault Agent sidecar** approach is recommended alongside VSO:
+- VSO handles static secrets (TLS certs) — writes to K8s Secrets, no sidecar overhead
+- Vault Agent sidecar handles dynamic secrets — injects credentials directly into pod filesystem, manages lease renewal
+- This hybrid approach avoids sidecar overhead for static certs while enabling Vault's full dynamic secrets capabilities where needed
 
 ## Pod Security
 
